@@ -1,0 +1,29 @@
+#python cache files
+*.pyc
+__pycache__/
+data/
+
+#log files
+tests.log
+
+#test type file
+test-type.txt
+
+#copy settings
+CopySettings.json
+# Ignore data
+*.csv
+*.wav
+
+# Ignore version file
+mcvqoe/intelligibility/version.py
+
+#ignore egg info
+mcvqoe_intelligibility.egg-info/
+
+#build and dist directories
+build/
+dist/
+
+# Ignore eggs
+.eggs/
