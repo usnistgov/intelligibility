@@ -10,6 +10,9 @@ import time
 import sys
 import os.path
 import datetime
+
+#version import for logging purposes
+from .version import version
      
 def terminal_progress_update(prog_type,num_trials,current_trial,err_msg=""):
     if(prog_type=='proc'):
