@@ -1,4 +1,4 @@
-import mcvqoe
+import mcvqoe.base
 import abcmrt
 import scipy.io.wavfile
 import numpy as np
@@ -268,7 +268,7 @@ class measure:
             if(fs_file != abcmrt.fs):
                 raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
             # Convert to float sound array and add to list
-            self.y.append( mcvqoe.audio_float(audio_dat))   
+            self.y.append( mcvqoe.base.audio_float(audio_dat))   
             
     def csv_header_fmt(self):
         """
@@ -335,7 +335,7 @@ class measure:
         #add abcmrt version
         self.info['abcmrt version']=abcmrt.version
         #fill in standard stuff
-        self.info.update(mcvqoe.write_log.fill_log(self))
+        self.info.update(mcvqoe.base.write_log.fill_log(self))
         #-----------------------[Setup Files and folders]-----------------------
         
         #generate data dir names
@@ -375,7 +375,7 @@ class measure:
             
         #---------------------------[write log entry]---------------------------
         
-        mcvqoe.write_log.pre(info=self.info, outdir=self.outdir)
+        mcvqoe.base.write_log.pre(info=self.info, outdir=self.outdir)
         
         #---------------[Try block so we write notes at the end]---------------
         
@@ -479,7 +479,7 @@ class measure:
             else:
                 info={}
             #finish log entry
-            mcvqoe.post(outdir=self.outdir,info=info)
+            mcvqoe.base.post(outdir=self.outdir,info=info)
             
         return (intell_est)
         
@@ -515,7 +515,7 @@ class measure:
         else:
             voice_dat=rec_dat
 
-        rec_dat=mcvqoe.audio_float(voice_dat)
+        rec_dat=mcvqoe.base.audio_float(voice_dat)
 
         #---------------------[Compute intelligibility]---------------------
         
