@@ -1,5 +1,6 @@
 import mcvqoe.base
 import abcmrt
+import glob
 import scipy.io.wavfile
 import numpy as np
 import csv
@@ -112,6 +113,14 @@ class measure:
         trial number. The first argument, progress type is a string that will be
         one of {'test','proc'} to indicate that the test is running trials or
         processing data. 
+    save_tx_audio : bool, default=False
+        If true, tx audio will be saved in `outdir/data/wav/[test string]/`.
+        Otherwise tx audio will not be saved. Ignored if save_audio is False.
+    save_audio : bool, default=True
+        If true audio from the test will remain in `outdir/data/wav/[test string]/`.
+        Otherwise audio will be deleted once it is no longer used. If false then
+        save_tx_audio=False is also implied.
+    
 
     Methods
     -------
@@ -212,6 +221,7 @@ class measure:
         self.progress_update=terminal_progress_update
         self.intell_est='aggregate'
         self.save_tx_audio=False
+        self.save_audio=True
         
     def load_audio(self):
         """
@@ -426,6 +436,12 @@ class measure:
                 #-------------------------[Process Audio]-------------------------
 
                 trial_dat=self.process_audio(clip_name,rec_chans)
+                
+                #check if we will need audio later
+                if(self.intell_est!='aggregate'):
+                    #done with processing, delete file
+                    if(not self.save_audio):
+                        os.remove(clip_name)
 
                 #---------------------------[Write File]---------------------------
                 
@@ -450,6 +466,11 @@ class measure:
             
                 #remove temp file
                 os.remove(temp_data_filename)
+                
+                #remove all audio files from wavdir
+                for name in glob.iglob(os.path.join(wavdir,'*.wav')):
+                    os.remove(name)
+                    
             elif(self.intell_est=='trial'):
                 #move temp file to real file
                 shutil.move(temp_data_filename,self.data_filename)
