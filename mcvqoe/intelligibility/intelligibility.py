@@ -54,11 +54,9 @@ def parse_audio_chans(csv_str):
 
 class measure:
     """
-    Class to run and reprocess Probability of Successful Delivery tests.
+    Class to run and reprocess ABC_MRT Intelligibility tests.
 
-    The PSuD class is used to run Probability of Successful Delivery tests.
-    These can either be tests with real communication devices or simulated Push
-    To Talk (PTT) systems.
+    The Intelligibility measure class is used to measure intelligibility of a real or simulated push to talk communications system
     
     Attributes
     ----------
@@ -121,7 +119,6 @@ class measure:
         Otherwise audio will be deleted once it is no longer used. If false then
         save_tx_audio=False is also implied.
     
-
     Methods
     -------
 
@@ -138,10 +135,10 @@ class measure:
     --------
     example of running a test with simulated devices.
 
-    >>>from PSuD_1way_1loc import PSuD
+    >>>from mcvqoe.intelligibility import measure as intell
     >>>import mcvqoe.simulation
     >>>sim_obj=mcvqoe.simulation.QoEsim()
-    >>>test_obj=PSuD(ri=sim_obj,audio_interface=sim_obj,trials=10,
+    >>>test_obj=intell(ri=sim_obj,audio_interface=sim_obj,trials=10,
     ...     audio_path='path/to/audio/',
     ...     audio_files=('F1_PSuD_Norm_10.wav','F3_PSuD_Norm_10.wav',
     ...         'M3_PSuD_Norm_10.wav','M4_PSuD_Norm_10.wav'
@@ -165,64 +162,31 @@ class measure:
     data_fields={"Timestamp":str,"Filename":str,"channels":parse_audio_chans,"Over_runs":int,"Under_runs":int,'Intelligibility':float}
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','data_fields')
     
-    def __init__(self,
-                 audio_files=[],
-                 audio_path = '',
-                 trials = 100,
-                 outdir='',
-                 ri=None,
-                 info={'Test Type':'default','Pre Test Notes':None},
-                 ptt_wait=0.68,
-                 ptt_gap=3.1,
-                 audio_interface=None,
-                 get_post_notes = None,
-                 full_audio_dir=False):
-        """
-        create a new PSuD object.
-        
-        Parameters
-        ----------
-        audio_files : list, default=[]
-            List of names of audio files. relative paths are relative to audio_path
-        audio_path : string, default=''
-            Path where audio is stored
-        trials : trials, default=100
-            Number of times audio will be run through the system in the run method
-        outdir : str, default=''
-            Base directory where data is stored.
-        ri : mcvqoe.RadioInterface, default=None
-            Object to use to key the audio channel
-        info : dict, default={'Test Type':'default','Pre Test Notes':None}
-            Dictionary with test info to for the log entry
-        ptt_wait : float, default=0.68
-            Time to wait, in seconds, between keying the channel and playing audio
-        ptt_gap : float, default=3.1
-            Time to pause, in seconds, between one trial and the next
-        audio_interface : mcvqoe.AudioPlayer ,default=None
-            interface to use to play and record audio on the communication channel
-        get_post_notes : function, default=None
-            Function to call to get notes at the end of the test.
-        full_audio_dir : bool, default=False
-            read, and use, .wav files in audio_path, ignore audio_files and trials
-        """
+    def __init__(self, **kwargs):
                  
         self.rng=np.random.default_rng()
         #set default values
-        self.audio_files=audio_files
-        self.audio_path=audio_path
-        self.trials=trials
-        self.outdir=outdir
-        self.ri=ri
-        self.info=info
-        self.ptt_wait=ptt_wait
-        self.ptt_gap=ptt_gap
-        self.audio_interface=audio_interface
-        self.full_audio_dir=full_audio_dir
+        self.audio_files=[]
+        self.audio_path=''
+        self.trials=100
+        self.outdir=''
+        self.ri=None
+        self.info={'Test Type':'default','Pre Test Notes':None}
+        self.ptt_wait=0.68
+        self.ptt_gap=3.1
+        self.audio_interface=None
+        self.full_audio_dir=False
         self.progress_update=terminal_progress_update
         self.intell_est='aggregate'
         self.save_tx_audio=False
         self.save_audio=True
         
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(k, v)
+            else:
+                raise TypeError(f"{k} is not a valid keyword argument")
+
     def load_audio(self):
         """
         load audio files for use in test.
