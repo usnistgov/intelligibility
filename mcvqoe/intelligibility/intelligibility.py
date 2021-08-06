@@ -148,22 +148,22 @@ class measure:
     
     def __init__(self, **kwargs):
                  
-        self.rng=np.random.default_rng()
+        self.rng = np.random.default_rng()
         #set default values
-        self.audio_files=[]
-        self.audio_path=''
-        self.trials=100
-        self.outdir=''
-        self.ri=None
-        self.info={'Test Type':'default','Pre Test Notes':None}
-        self.ptt_wait=0.68
-        self.ptt_gap=3.1
-        self.audio_interface=None
-        self.full_audio_dir=False
-        self.progress_update=terminal_progress_update
-        self.intell_est='aggregate'
-        self.save_tx_audio=False
-        self.save_audio=True
+        self.audio_files = []
+        self.audio_path = ''
+        self.trials = 100
+        self.outdir = ''
+        self.ri = None
+        self.info = {'Test Type':'default','Pre Test Notes':None}
+        self.ptt_wait = 0.68
+        self.ptt_gap = 3.1
+        self.audio_interface = None
+        self.full_audio_dir = False
+        self.progress_update = terminal_progress_update
+        self.intell_est = 'aggregate'
+        self.save_tx_audio = False
+        self.save_audio = True
         
         for k, v in kwargs.items():
             if hasattr(self, k):
