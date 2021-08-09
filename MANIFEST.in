@@ -1,1 +1,2 @@
+recursive-include mcvqoe/intelligibility/audio_clips *.wav
 recursive-exclude tests *

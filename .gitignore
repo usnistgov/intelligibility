@@ -27,3 +27,6 @@ dist/
 
 # Ignore eggs
 .eggs/
+
+# Unignore audio clips
+!mcvqoe/intelligibility/audio_clips/*.wav
