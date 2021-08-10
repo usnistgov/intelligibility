@@ -354,6 +354,9 @@ class measure:
             #zero pause count
             self._pause_count = 0
             
+            #load templates outside the loop so we take the hit here
+            abcmrt.load_templates()
+            
             for trial in range(self.trials):
                 #-----------------------[Update progress]-------------------------
                 if(not self.progress_update('test',self.trials,trial)):
