@@ -8,6 +8,7 @@ import sys
 import mcvqoe.hardware
 
 import mcvqoe.intelligibility as intell
+import numpy as np
 
 def main():
     #---------------------------[Create Test object]---------------------------
@@ -23,6 +24,8 @@ def main():
     #don't save audio for simulation
     test_obj.save_tx_audio=False
     test_obj.save_audio=False
+    #no need to pause
+    test_obj.pause_trials = np.inf
     #only get test notes on error
     test_obj.get_post_notes=lambda : mcvqoe.gui.post_test(error_only=True)
     
