@@ -6,6 +6,19 @@ import mcvqoe.hardware
 
 import mcvqoe.intelligibility as intell
 
+def int_or_inf(input):
+    """Check for 'infinite' entry, and change value  to np.inf if found"""
+    try:
+        return int(input)
+    except ValueError as e:
+        word = input.lower()
+        infinite = ['inf', 'np.inf', 'math.inf', 'infinite']
+        if word in infinite:
+            return np.inf
+        else:
+            #not infinite, re throw ValueError
+            raise e
+
 def main():
     #---------------------------[Create Test object]---------------------------
 
@@ -22,12 +35,6 @@ def main():
 
     parser = argparse.ArgumentParser(
         description=__doc__)
-    parser.add_argument(
-                        '-a', '--audio-files', default=[],action="extend", nargs="+", type=str,metavar='FILENAME',
-                        help='Path to audio files to use for test. Cutpoint files must also be present')
-    parser.add_argument(
-                        '-f', '--audio-path', default=test_obj.audio_path, type=str,
-                        help='Path to look for audio files in. All audio file paths are relative to this unless they are absolute')
     parser.add_argument('-t', '--trials', type=int, default=test_obj.trials,metavar='T',
                         help='Number of trials to use for test. Defaults to %(default)d')
     parser.add_argument("-r", "--radioport", default="",metavar='PORT',
@@ -65,6 +72,10 @@ def main():
     parser.add_argument('--no-save-audio', dest='save_audio', action='store_false',
                         help='Don\'t save audio in the wav directory, implies'+
                         '--no-save-tx-audio')
+    parser.add_argument('--pause-trials', type=int_or_inf,
+                        default=test_obj.pause_trials, metavar="T",
+                        help='Number of trials to run until a pause is ' +
+                        'encountered (default: %(default)s).')
                                                 
                         
     #-----------------------------[Parse arguments]-----------------------------

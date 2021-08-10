@@ -13,7 +13,7 @@ import time
 import numpy as np
 
 from distutils.util import strtobool
-from mcvqoe.base.terminal_user import terminal_progress_update
+from mcvqoe.base.terminal_user import terminal_progress_update, terminal_user_check
 
 #version import for logging purposes
 from .version import version
@@ -153,6 +153,7 @@ class measure:
         self.rng = np.random.default_rng()
         # set default values
         self.trials = 100
+        self.pause_trials = 100
         self.outdir = ''
         self.ri = None
         self.info = {'Test Type': 'default', 'Pre Test Notes': None}
@@ -161,9 +162,11 @@ class measure:
         self.audio_interface = None
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
+        self.user_check = terminal_user_check
         self.intell_est = 'aggregate'
         self.save_tx_audio = False
         self.save_audio = True
+        self._pause_count = 0
 
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -331,6 +334,11 @@ class measure:
         #---------------[Try block so we write notes at the end]---------------
         
         try:
+    
+            #---------------------[Save Time for Set Timing]----------------------
+            
+            set_start = datetime.datetime.now().replace(microsecond=0)
+            
             #---------------------------[Turn on RI LED]---------------------------
             
             self.ri.led(1,True)
@@ -343,13 +351,21 @@ class measure:
             with open(temp_data_filename,'wt') as f:
                 f.write(header)
             #--------------------------[Measurement Loop]--------------------------
+            
+            #zero pause count
+            self._pause_count = 0
+            
+            #load templates outside the loop so we take the hit here
+            abcmrt.load_templates()
+            
             for trial in range(self.trials):
                 #-----------------------[Update progress]-------------------------
                 if(not self.progress_update('test',self.trials,trial)):
                     #turn off LED
                     self.ri.led(1, False)
-                    print('Exit from user')
-                    break
+                    
+                    if(user_exit):
+                        raise SystemExit()
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
@@ -394,6 +410,39 @@ class measure:
                 with open(temp_data_filename,'at') as f:
                     f.write(dat_format.format(**trial_dat))
                     
+                #------------------[Check if we should pause]------------------
+                
+                #increment pause count
+                self._pause_count+=1
+                
+                if self._pause_count >= self.pause_trials:
+                         
+                    #zero pause count
+                    self._pause_count = 0
+                    
+                    # Calculate set time
+                    time_diff = datetime.datetime.now().replace(microsecond=0)
+                    set_time = time_diff - set_start
+                    
+                    # Turn on LED when waiting for user input
+                    self.ri.led(2, True)
+                    
+                    # wait for user
+                    user_exit = self.user_check(
+                            'normal-stop',
+                            'check batteries.',
+                            trials=self.pause_trials,
+                            time=set_time,
+                        )
+                            
+                    # Turn off LED, resuming
+                    self.ri.led(2, False)
+                        
+                    if(user_exit):
+                        raise SystemExit()
+                    
+                    # Save time for next set
+                    set_start = datetime.datetime.now().replace(microsecond=0)
             #-------------------------------[Cleanup]-------------------------------
             
             if(self.intell_est=='aggregate'):
@@ -639,10 +688,10 @@ class measure:
                 f_out.write(dat_format.format(**merged_dat))                
 
             if(not (self.intell_est=='aggregate')):
-				#give be patient update#update progress
-                self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
                 phi_hat=abcmrt.guess_correction(np.mean(success))
             else:
+				#give be patient update#update progress
+                self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
                 phi_hat,success=abcmrt.process(speech,clip_num)
                 
             return phi_hat

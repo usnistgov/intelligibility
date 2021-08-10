@@ -28,7 +28,7 @@ setuptools.setup(
     entry_points={
         'console_scripts':[
             'intell-sim=mcvqoe.intelligibility.intelligibility_simulate:main',
-            'intell-measure=mcvqoe.intelligibility.intelligibility_1way_1loc:main',
+            'intell-measure=mcvqoe.intelligibility.intelligibility_test:main',
             'intell-reprocess=mcvqoe.intelligibility.intelligibility_reprocess:main',
         ],
     },
