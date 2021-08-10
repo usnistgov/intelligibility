@@ -1,19 +1,20 @@
-import mcvqoe.base
 import abcmrt
-import glob
-import scipy.io.wavfile
-import numpy as np
 import csv
-import re
-from distutils.util import strtobool
-import shutil
-import time
-import sys
-import os.path
 import datetime
+import glob
+import mcvqoe.base
+import os.path
+import pkg_resources
+import re
+import shutil
+import sys
+import time
 
+import numpy as np
 
+from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update
+
 #version import for logging purposes
 from .version import version
 
@@ -147,97 +148,88 @@ class measure:
     no_log=('y','clipi','data_dir','wav_data_dir','csv_data_dir','data_fields')
     
     def __init__(self, **kwargs):
-                 
-        self.rng=np.random.default_rng()
-        #set default values
-        self.audio_files=[]
-        self.audio_path=''
-        self.trials=100
-        self.outdir=''
-        self.ri=None
-        self.info={'Test Type':'default','Pre Test Notes':None}
-        self.ptt_wait=0.68
-        self.ptt_gap=3.1
-        self.audio_interface=None
-        self.full_audio_dir=False
-        self.progress_update=terminal_progress_update
-        self.intell_est='aggregate'
-        self.save_tx_audio=False
-        self.save_audio=True
-        
+
+        self.rng = np.random.default_rng()
+        # set default values
+        self.trials = 100
+        self.outdir = ''
+        self.ri = None
+        self.info = {'Test Type': 'default', 'Pre Test Notes': None}
+        self.ptt_wait = 0.68
+        self.ptt_gap = 3.1
+        self.audio_interface = None
+        self.full_audio_dir = False
+        self.progress_update = terminal_progress_update
+        self.intell_est = 'aggregate'
+        self.save_tx_audio = False
+        self.save_audio = True
+
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
+        # Get all included audio files
+        audio_files = pkg_resources.resource_listdir(
+            'mcvqoe.intelligibility', 'audio_clips'
+            )
+        # Initialize dictionary for audio files
+        self._audio_order = dict()
+        for fname in audio_files:
+            num = abcmrt.file2number(fname)
+            # Store audio file name with the key of its number
+            self._audio_order[num] = fname
 
     def load_audio(self):
         """
-        load audio files for use in test.
-        
-        this loads audio from self.audio_files and stores values in self.y,
+        Load audio files for use in test.
+
+        This loads audio and stores values in self.y,
         self.cutpoints and self.keyword_spacings
         In most cases run() will call this automatically but, it can be called
         in the case that self.audio_files is changed after run() is called
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-
+        TODO: Update this documentation
+        
         Raises
         ------
-        ValueError
-            If self.audio_files is empty
         RuntimeError
             If clip fs is not 48 kHz
         """
-   
-        #if we are not using all files, check that audio files is not empty
-        if not self.audio_files and not self.full_audio_dir:
-            #TODO : is this the right error to use here??
-            raise ValueError('Expected self.audio_files to not be empty')
-            
-        if(self.full_audio_dir):
-            #override audio_files
-            self.audio_files=[]
-            #look through all things in audio_path
-            for f in os.scandir(self.audio_path):
-                #make sure this is a file
-                if(f.is_file()): 
-                    #get extension
-                    _,ext=os.path.splitext(f.name)
-                    #check for .wav files
-                    if(ext=='.wav'):
-                        #add to list
-                        self.audio_files.append(f.name)
-                #TODO : recursive search?
+        if self.trials < 0 or self.trials > 1200:
+            raise ValueError(
+                f'Trials must be between 1-1200, {self.trials} is invalid.'
+                )
+        # Get file order
+        file_order = abcmrt.file_order()
+        # Initialize where audio will be stored
+        self.y = []
+        self.audio_files = []
 
-        #list for input speech
-        self.y=[]
-        
-        for f in self.audio_files:
-            #make full path from relative paths
-            f_full=os.path.join(self.audio_path,f)
-            # load audio
-            fs_file, audio_dat = scipy.io.wavfile.read(f_full)
-            #check fs
-            if(fs_file != abcmrt.fs):
-                raise RuntimeError(f'Expected fs to be {abcmrt.fs} but got {fs_file} for {f}')
-            # Convert to float sound array and add to list
-            self.y.append( mcvqoe.base.audio_float(audio_dat))   
-            
+        for k in range(self.trials):
+            file_num = file_order[k]
+            file_name = self._audio_order[file_num]
+            file_path = pkg_resources.resource_filename(
+                'mcvqoe.intelligibility',
+                f'audio_clips/{file_name}'
+                )
+            fs, audio_data = mcvqoe.base.audio_read(file_path)
+            # TODO: Can probably delete this check?
+            # check fs
+            if(fs != abcmrt.fs):
+                raise RuntimeError((
+                    f'Expected fs to be {abcmrt.fs} but got {fs} for'
+                    f' {file_path}'
+                    ))
+            self.y.append(audio_data)
+            self.audio_files.append(file_name)
+
     def csv_header_fmt(self):
         """
-        generate header and format for .csv files.
-        
+        Generate header and format for .csv files.
+
         This generates a header for .csv files along with a format (that can be
         used with str.format()) to generate each row in the .csv
-        
-        Parameters
-        ----------
-        
+
         Returns
         -------
         hdr : string
@@ -316,8 +308,8 @@ class measure:
         #create test dir
         os.makedirs(wavdir, exist_ok=True)
         
-        #get name of audio clip without path or extension
-        clip_names=[ os.path.basename(os.path.splitext(a)[0]) for a in self.audio_files]
+        # get name of audio clip without path or extension
+        clip_names=[os.path.basename(os.path.splitext(a)[0]) for a in self.audio_files]
 
         #get name of csv files with path and extension
         self.data_filename=os.path.join(csv_data_dir,f'{base_filename}.csv')
@@ -329,7 +321,7 @@ class measure:
             #write out Tx clips to files
             for dat,name in zip(self.y,clip_names):
                 out_name=os.path.join(wavdir,f'Tx_{name}')
-                scipy.io.wavfile.write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
+                mcvqoe.base.audio_write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
             
         #---------------------------[write log entry]---------------------------
         
@@ -472,7 +464,7 @@ class measure:
         """
         
         #---------------------[Load in recorded audio]---------------------
-        fs,rec_dat = scipy.io.wavfile.read(fname)
+        fs,rec_dat = mcvqoe.base.audio_read(fname)
         if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
         
@@ -572,38 +564,7 @@ class measure:
         self.trials=len(data)
         
         return data
-        
-    #get the clip index given a partial clip name
-    def find_clip_index(self,name):
-        """
-        find the inex of the matching transmit clip.
 
-        Parameters
-        ----------
-        name : string
-            base name of audio clip
-
-        Returns
-        -------
-        int
-            index of matching tx clip
-
-        """
-        
-        #match a string that has the chars that are in name
-        #this 
-        name_re=re.compile(re.escape(name)+'(?![^.])')
-        #get all matching indices
-        match=[idx for idx,clip in enumerate(self.audio_files) if  name_re.search(clip)]
-        #check that a match was found
-        if(not match):
-            raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audio_files}')
-        #check that only one match was found
-        if(len(match)!=1):
-            raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audio_files}')
-        #return matching index
-        return match[0]
-        
     def post_process(self,test_dat,fname,audio_path):
         """
         process csv data.
