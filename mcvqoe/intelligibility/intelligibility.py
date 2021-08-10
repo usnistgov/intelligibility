@@ -563,39 +563,7 @@ class measure:
         self.trials=len(data)
         
         return data
-    
-    # TODO: Can we delete this? doesn't seem used
-    #get the clip index given a partial clip name
-    def find_clip_index(self,name):
-        """
-        find the index of the matching transmit clip.
 
-        Parameters
-        ----------
-        name : string
-            base name of audio clip
-
-        Returns
-        -------
-        int
-            index of matching tx clip
-
-        """
-        
-        #match a string that has the chars that are in name
-        #this 
-        name_re=re.compile(re.escape(name)+'(?![^.])')
-        #get all matching indices
-        match=[idx for idx,clip in enumerate(self.audio_files) if  name_re.search(clip)]
-        #check that a match was found
-        if(not match):
-            raise RuntimeError(f'no audio clips found matching \'{name}\' found in {self.audio_files}')
-        #check that only one match was found
-        if(len(match)!=1):
-            raise RuntimeError(f'multiple audio clips found matching \'{name}\' found in {self.audio_files}')
-        #return matching index
-        return match[0]
-        
     def post_process(self,test_dat,fname,audio_path):
         """
         process csv data.
