@@ -415,9 +415,10 @@ class measure:
                 #remove temp file
                 os.remove(temp_data_filename)
                 
-                #remove all audio files from wavdir
-                for name in glob.iglob(os.path.join(wavdir,'*.wav')):
-                    os.remove(name)
+                if not self.save_audio:
+                    #remove all audio files from wavdir
+                    for name in glob.iglob(os.path.join(wavdir,'*.wav')):
+                        os.remove(name)
                     
             elif(self.intell_est=='trial'):
                 #move temp file to real file
