@@ -683,10 +683,10 @@ class measure:
                 f_out.write(dat_format.format(**merged_dat))                
 
             if(not (self.intell_est=='aggregate')):
-				#give be patient update#update progress
-                self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
                 phi_hat=abcmrt.guess_correction(np.mean(success))
             else:
+				#give be patient update#update progress
+                self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
                 phi_hat,success=abcmrt.process(speech,clip_num)
                 
             return phi_hat
