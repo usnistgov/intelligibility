@@ -359,8 +359,9 @@ class measure:
                 if(not self.progress_update('test',self.trials,trial)):
                     #turn off LED
                     self.ri.led(1, False)
-                    print('Exit from user')
-                    break
+                    
+                    if(user_exit):
+                        raise SystemExit()
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
