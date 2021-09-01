@@ -152,8 +152,8 @@ class measure:
 
         self.rng = np.random.default_rng()
         # set default values
-        self.trials = 100
-        self.pause_trials = 100
+        self.trials = 1200
+        self.pause_trials = 450
         self.outdir = ''
         self.ri = None
         self.info = {'Test Type': 'default', 'Pre Test Notes': None}
