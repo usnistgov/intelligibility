@@ -77,7 +77,7 @@ class measure:
         are dictionary keys and the values are conversion functions to get from
         string to the appropriate type. This should not be modified in most
         cases
-    intell_est : {'trial','aggregate','none'}, default='aggregate'
+    intell_est : {'trial','aggregate','none'}, default='trial'
         Control when, and how, intelligibility and mouth to ear estimations are
         done.
     no_log : tuple of strings
@@ -163,7 +163,7 @@ class measure:
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
         self.user_check = terminal_user_check
-        self.intell_est = 'aggregate'
+        self.intell_est = 'trial'
         self.save_tx_audio = False
         self.save_audio = True
         self._pause_count = 0
