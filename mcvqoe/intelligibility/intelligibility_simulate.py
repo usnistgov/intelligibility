@@ -10,6 +10,75 @@ import mcvqoe.hardware
 import mcvqoe.intelligibility as intell
 import numpy as np
 
+
+def simulate(
+             test_id=None,
+             **kwargs,
+             ):
+    """
+    Simulate intelligibility measurement.
+
+    Returns
+    -------
+    None.
+
+    """
+    # ---------------------------[Create Test object]--------------------------
+
+    # create sim object
+    sim_obj = mcvqoe.simulation.QoEsim()
+
+    # create object here to use default values for arguments
+    test_obj = intell.measure()
+    # set wait times to zero for simulation
+    test_obj.ptt_wait = 0
+    test_obj.ptt_gap = 0
+    # don't save audio for simulation
+    test_obj.save_tx_audio = False
+    test_obj.save_audio = False
+    # no need to pause
+    test_obj.pause_trials = np.inf
+    # only get test notes on error
+    test_obj.get_post_notes = lambda : mcvqoe.gui.post_test(error_only=True)
+
+    for k, v in kwargs.items():
+        if hasattr(test_obj, k):
+            setattr(test_obj, k, v)
+        if hasattr(sim_obj, k):
+            setattr(sim_obj, k, v)
+    # set audioInterface to sim object
+    test_obj.audio_interface = sim_obj
+    # set radio interface object to sim object
+    test_obj.ri = sim_obj
+
+    # -----------------------------[Log Info]--------------------------
+    test_obj.info['codec'] = sim_obj.channel_tech
+    test_obj.info['codec-rate'] = sim_obj.channel_rate
+
+    if test_id is not None:
+        test_obj.info['test-ID'] = test_id
+
+    test_obj.info['test_type'] = "simulation"
+    test_obj.info['tx_dev'] = "none"
+    test_obj.info['rx_dev'] = "none"
+
+    # construct string for system name
+    system = sim_obj.channel_tech
+    if sim_obj.channel_rate is not None:
+        system += ' at ' + str(sim_obj.channel_rate)
+    test_obj.info['system'] = system
+
+    test_obj.info['test_loc'] = "N/A"
+    # --------------------------------[Run Test]------------------------------
+
+    intell_est = test_obj.run()
+
+    test_path = os.path.join(test_obj.outdir, "data")
+
+    print(f"Test complete. Data stored in {test_path}")
+    return intell_est, test_obj, sim_obj
+
+
 def main():
     #---------------------------[Create Test object]---------------------------
 
