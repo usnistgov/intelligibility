@@ -5,8 +5,8 @@ with open("README.md", "r",encoding='utf-8') as fh:
 
 setuptools.setup(
     name="mcvqoe-intelligibility",
-    author="Jesse Frey, Peter Fink, Jaden Pieper",
-    author_email="jesse.frey@nist.gov,jaden.pieper@nist.gov",
+    author="PSCR",
+    author_email="PSCR@PSCR.gov",
     description="Measurement code for intelligibility",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -22,8 +22,8 @@ setuptools.setup(
     ],
     license='NIST software License',
     install_requires=[
-        'mcvqoe-nist>=0.4',
-        'abcmrt-nist>=0.1.3',
+        'mcvqoe-base>=0.4',
+        'abcmrt16>=0.1.3',
     ],
     entry_points={
         'console_scripts':[
