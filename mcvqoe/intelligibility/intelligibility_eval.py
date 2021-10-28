@@ -8,8 +8,10 @@ import argparse
 import os
 import warnings
 
+import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
+import plotly.express as px
 
 import mcvqoe.math
 
@@ -71,7 +73,7 @@ class evaluate():
             
             # If no extension given use csv
             fname, fext = os.path.splitext(test_name)
-            self.test_names.append(fname)
+            self.test_names.append(os.path.basename(fname))
             # check if a path was given to a .csv file
             if not dat_path and not fext == '.csv':
                 # generate using test_path
@@ -85,15 +87,14 @@ class evaluate():
         self.data = None
         self.load_data()
         
-        self.mean = None
-        self.ci = None
-        
         # Check for kwargs
         for k, v in kwargs.items():
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
                 raise TypeError(f"{k} is not a valid keyword argument")
+        
+        self.mean, self.ci = self.eval()
 
     def load_data(self):
         """
@@ -135,6 +136,59 @@ class evaluate():
                                            )
         
         return self.mean, self.ci
+    
+    def histogram(self, test_name=None, talkers=None):
+        df = self.data
+        # Filter by session name if given
+        if test_name is not None:
+            df_filt = pd.DataFrame()
+            if not isinstance(test_name, list):
+                test_name = [test_name]
+            for name in test_name:
+                df_filt = df_filt.append(df[df['name'] == name])
+            df = df_filt
+        # Filter by talkers if given
+        if talkers is not None:
+            df_filt = pd.DataFrame()
+            if isinstance(talkers, str):
+                talkers = [talkers]
+            for talker in talkers:
+                ix = [talker in x for x in df['Filename']]
+                df_filt = df_filt.append(df[ix])
+            df = df_filt
+        fig = go.Figure()
+        fig.add_trace(
+            go.Histogram(
+                x=df['Intelligibility'],
+                # color='name',
+                xbins={
+                    'start': -1/32,
+                    'end': 1+1/32,
+                    'size': 1/16,
+                    }
+                )
+            )
+        fig.add_vline(x=self.mean, line_width=3, line_dash="dash")
+        fig.add_vline(x=self.ci[0], line_width=2, line_dash="dot")
+        fig.add_vline(x=self.ci[1], line_width=2, line_dash="dot")
+        
+        fig.add_annotation(xref='x', yref='paper',
+                            x=self.mean, y=0.9,
+                            text="Mean and confidence interval",
+                            showarrow=True,
+                            xanchor='right',
+                            )
+
+        fig.update_layout(legend=dict(
+            yanchor="bottom",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+        ))
+        return fig
+    
+    def plot(self, test_name, talkers):
+        print('need to implement scatter plot')
 
 
 # Main definition
