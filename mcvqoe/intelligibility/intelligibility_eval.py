@@ -6,6 +6,7 @@ Created on Thu Oct  7 12:47:39 2021
 """
 import argparse
 import os
+import re
 import warnings
 
 import plotly.graph_objects as go
@@ -187,8 +188,60 @@ class evaluate():
         ))
         return fig
     
-    def plot(self, test_name, talkers):
-        print('need to implement scatter plot')
+    def plot(self, test_name=None, talkers=None, x=None):
+        df = self.data
+        # Filter by session name if given
+        # Filter by session name if given
+        if test_name is not None:
+            df_filt = pd.DataFrame()
+            if not isinstance(test_name, list):
+                test_name = [test_name]
+            for name in test_name:
+                df_filt = df_filt.append(df[df['name'] == name])
+            df = df_filt
+        # Filter by talkers if given
+        if talkers is not None:
+            df_filt = pd.DataFrame()
+            if isinstance(talkers, str):
+                talkers = [talkers]
+            for talker in talkers:
+                ix = [talker in x for x in df['Filename']]
+                df_sub = df[ix]
+                df_sub['Talker'] = talker
+                df_filt = df_filt.append(df_sub)
+                
+            df = df_filt
+        else:
+            # TODO: Consider just dropping this into init/data load, might make things easier
+            pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
+            talkers = set()
+            talker_v = []
+            for index, row in df.iterrows():
+                res = pattern.search(row['Filename'])
+                if res is not None:
+                    talker = res.groups()[0]
+                    talkers.add(talker)
+                    talker_v.append(talker)
+                else:
+                    talker_v.append('NA')
+            df['Talker'] = talker_v        
+            
+
+        fig = px.scatter(df, x=x, y='Intelligibility',
+                          color='name',
+                          symbol='Talker',
+                          hover_name='Filename',
+                          )
+        fig.update_layout(legend=dict(
+            yanchor="bottom",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            ),
+            legend_orientation="h",
+            showlegend=False,
+        )
+        return fig
 
 
 # Main definition
