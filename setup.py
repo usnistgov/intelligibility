@@ -24,6 +24,9 @@ setuptools.setup(
     install_requires=[
         'mcvqoe-base',
         'abcmrt16',
+        'plotly',
+        'numpy',
+        'pandas',
     ],
     entry_points={
         'console_scripts':[
