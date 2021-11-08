@@ -213,7 +213,7 @@ class evaluate():
             df = df_filt
         else:
             # TODO: Consider just dropping this into init/data load, might make things easier
-            pattern = pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
+            pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
             talkers = set()
             talker_v = []
             for index, row in df.iterrows():
