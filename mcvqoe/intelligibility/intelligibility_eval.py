@@ -138,7 +138,8 @@ class evaluate():
         
         return self.mean, self.ci
     
-    def histogram(self, test_name=None, talkers=None):
+    def histogram(self, test_name=None, talkers=None,
+                  title='Histogram of intelligibility values'):
         df = self.data
         # Filter by session name if given
         if test_name is not None:
@@ -180,15 +181,21 @@ class evaluate():
                             xanchor='right',
                             )
 
-        fig.update_layout(legend=dict(
-            yanchor="bottom",
-            y=0.99,
-            xanchor="left",
-            x=0.01
-        ))
+        fig.update_layout(            
+            legend=dict(
+                yanchor="bottom",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                ),
+            title=title,
+            xaxis_title='Intelligibility',
+            yaxis_title='count',
+        )
         return fig
     
-    def plot(self, test_name=None, talkers=None, x=None):
+    def plot(self, test_name=None, talkers=None, x=None,
+             title='Scatter plot of intelligibility scores'):
         df = self.data
         # Filter by session name if given
         # Filter by session name if given
@@ -231,6 +238,10 @@ class evaluate():
                           color='name',
                           symbol='Talker',
                           hover_name='Filename',
+                          title=title,
+                          labels={
+                              'index': 'Trial Number',
+                              },
                           )
         fig.update_layout(legend=dict(
             yanchor="bottom",
