@@ -131,10 +131,23 @@ class evaluate():
 
         """
         self.mean = np.mean(self.data['Intelligibility'])
-        self.ci, _ = mcvqoe.math.bootstrap_ci(self.data['Intelligibility'],
-                                           p=p,
-                                           method=method,
-                                           )
+        with np.errstate(divide='raise'):
+            try:
+                self.ci, _ = mcvqoe.math.bootstrap_ci(self.data['Intelligibility'],
+                                               p=p,
+                                               method=method,
+                                               )
+            except FloatingPointError:
+                warnings.warn(
+                    'Floating point error encountered in bootstrap-t'
+                     +'uncertainty estimate. Using percentile bootstrap'
+                     +'instead.'
+                    )
+                self.ci, _ = mcvqoe.math.bootstrap_ci(
+                    self.data['Intelligibility'],
+                    p=p,
+                    method='percentile'
+                    )
         
         return self.mean, self.ci
     
