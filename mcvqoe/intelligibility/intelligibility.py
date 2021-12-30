@@ -45,7 +45,7 @@ class measure:
     Class to run and reprocess ABC_MRT Intelligibility tests.
 
     The Intelligibility measure class is used to measure intelligibility of a real or simulated push to talk communications system
-    
+
     Attributes
     ----------
     audio_files : list
@@ -73,7 +73,7 @@ class measure:
     rng : Generator
         Generator to use for random numbers
     audio_interface : mcvqoe.AudioPlayer or mcvqoe.simulation.QoEsim
-        interface to use to play and record audio on the communication channel   
+        interface to use to play and record audio on the communication channel
     get_post_notes : function or None
         Function to call to get notes at the end of the test. Often set to
         mcvqoe.post_test to get notes with a gui popup.
@@ -102,7 +102,7 @@ class measure:
         takes three arguments, progress type, total number of trials, current
         trial number. The first argument, progress type is a string that will be
         one of {'test','proc'} to indicate that the test is running trials or
-        processing data. 
+        processing data.
     save_tx_audio : bool, default=False
         If true, tx audio will be saved in `outdir/data/wav/[test string]/`.
         Otherwise tx audio will not be saved. Ignored if save_audio is False.
@@ -110,7 +110,7 @@ class measure:
         If true audio from the test will remain in `outdir/data/wav/[test string]/`.
         Otherwise audio will be deleted once it is no longer used. If false then
         save_tx_audio=False is also implied.
-    
+
     Methods
     -------
 
@@ -137,9 +137,9 @@ class measure:
     ...         )
     ... )
     >>>test_obj.run()
-    
+
     Example of reprocessing  a test file, 'test.csv', to get 'rproc.csv'
-    
+
     >>>from PSuD_1way_1loc import PSuD
     >>>test_obj=PSuD()
     >>>test_dat=test_obj.load_test_data('[path/to/outdir/]data/csv/test.csv')
@@ -154,7 +154,7 @@ class measure:
     data_fields={"Timestamp":str,"Filename":str,"channels":parse_audio_chans,"Over_runs":int,"Under_runs":int,'Intelligibility':float}
     no_log = ('y', 'clipi', 'data_dir', 'wav_data_dir', 'csv_data_dir',
               'data_fields', '_audio_order')
-    
+
     def __init__(self, **kwargs):
 
         self.rng = np.random.default_rng()
@@ -202,7 +202,7 @@ class measure:
         In most cases run() will call this automatically but, it can be called
         in the case that self.audio_files is changed after run() is called
         TODO: Update this documentation
-        
+
         Raises
         ------
         RuntimeError
@@ -279,9 +279,9 @@ class measure:
         #add newlines at the end
         hdr+='\n'
         fmt+='\n'
-        
+
         return (hdr,fmt)
-    
+
     def run(self):
         """
         run a test with the properties of the class.
@@ -290,7 +290,7 @@ class measure:
         -------
         string
             name of the .csv file without path or extension
-            
+
 
         """
         #-----------------------[Check audio sample rate]-----------------------
@@ -308,14 +308,14 @@ class measure:
         if(self.full_audio_dir):
             #overide trials to use all the trials
             self.trials=len(self.y)
-        
+
         #generate clip index
         self.clipi=self.rng.permutation(self.trials)%len(self.y)
 
         #-------------------------[Get Test Start Time]-------------------------
         self.info['Tstart']=datetime.datetime.now()
         dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
-        
+
         #--------------------------[Fill log entries]--------------------------
         #set test name
         self.info['test']='Intelligibility'
@@ -324,27 +324,27 @@ class measure:
         #fill in standard stuff
         self.info.update(mcvqoe.base.write_log.fill_log(self))
         #-----------------------[Setup Files and folders]-----------------------
-        
+
         #generate data dir names
         data_dir=os.path.join(self.outdir,'data')
         wav_data_dir=os.path.join(data_dir,'wav')
         csv_data_dir=os.path.join(data_dir,'csv')
-        
-        
-        #create data directories 
+
+
+        #create data directories
         os.makedirs(csv_data_dir, exist_ok=True)
         os.makedirs(wav_data_dir, exist_ok=True)
-        
-        
+
+
         #generate base file name to use for all files
         base_filename='capture_%s_%s'%(self.info['Test Type'],dtn);
-        
+
         #generate test dir names
-        wavdir=os.path.join(wav_data_dir,base_filename) 
-        
+        wavdir=os.path.join(wav_data_dir,base_filename)
+
         #create test dir
         os.makedirs(wavdir, exist_ok=True)
-        
+
         # get name of audio clip without path or extension
         clip_names=[os.path.basename(os.path.splitext(a)[0]) for a in self.audio_files]
 
@@ -359,74 +359,74 @@ class measure:
             for dat,name in zip(self.y,clip_names):
                 out_name=os.path.join(wavdir,f'Tx_{name}')
                 mcvqoe.base.audio_write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
-            
+
         #---------------------------[write log entry]---------------------------
-        
+
         mcvqoe.base.write_log.pre(info=self.info, outdir=self.outdir)
-        
+
         #---------------[Try block so we write notes at the end]---------------
-        
+
         try:
-    
+
             #---------------------[Save Time for Set Timing]----------------------
-            
+
             set_start = datetime.datetime.now().replace(microsecond=0)
-            
+
             #---------------------------[Turn on RI LED]---------------------------
-            
+
             self.ri.led(1,True)
-            
+
             #-------------------------[Generate csv header]-------------------------
-            
+
             header,dat_format=self.csv_header_fmt()
-            
+
             #-----------------------[write initial csv file]-----------------------
             with open(temp_data_filename,'wt') as f:
                 f.write(header)
             #--------------------------[Measurement Loop]--------------------------
-            
+
             #zero pause count
             self._pause_count = 0
-            
+
             #load templates outside the loop so we take the hit here
             abcmrt.load_templates()
-            
+
             for trial in range(self.trials):
                 #-----------------------[Update progress]-------------------------
                 if(not self.progress_update('test',self.trials,trial)):
                     #turn off LED
                     self.ri.led(1, False)
-                    
+
                     if(user_exit):
                         raise SystemExit()
                 #-----------------------[Get Trial Timestamp]-----------------------
                 ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
                 #--------------------[Key Radio and play audio]--------------------
-                
+
                 #push PTT
                 self.ri.ptt(True)
-                
+
                 #pause for access
                 time.sleep(self.ptt_wait)
-                
+
                 clip_index=self.clipi[trial]
-                
+
                 #generate filename
                 clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
-                
+
                 #play/record audio
                 rec_chans=self.audio_interface.play_record(self.y[clip_index],clip_name)
-                
+
                 #un-push PTT
                 self.ri.ptt(False)
                 #-----------------------[Pause Between runs]-----------------------
-                
+
                 time.sleep(self.ptt_gap)
-                
+
                 #-------------------------[Process Audio]-------------------------
 
                 trial_dat=self.process_audio(clip_name,rec_chans)
-                
+
                 #check if we will need audio later
                 if(self.intell_est!='aggregate'):
                     #done with processing, delete file
@@ -434,32 +434,32 @@ class measure:
                         os.remove(clip_name)
 
                 #---------------------------[Write File]---------------------------
-                
+
                 trial_dat['Filename']   = clip_names[self.clipi[trial]]
                 trial_dat['Timestamp']  = ts
                 trial_dat['Over_runs']  = 0
                 trial_dat['Under_runs'] = 0
-                
+
                 with open(temp_data_filename,'at') as f:
                     f.write(dat_format.format(**trial_dat))
-                    
+
                 #------------------[Check if we should pause]------------------
-                
+
                 #increment pause count
                 self._pause_count+=1
-                
+
                 if self._pause_count >= self.pause_trials:
-                         
+
                     #zero pause count
                     self._pause_count = 0
-                    
+
                     # Calculate set time
                     time_diff = datetime.datetime.now().replace(microsecond=0)
                     set_time = time_diff - set_start
-                    
+
                     # Turn on LED when waiting for user input
                     self.ri.led(2, True)
-                    
+
                     # wait for user
                     user_exit = self.user_check(
                             'normal-stop',
@@ -467,43 +467,43 @@ class measure:
                             trials=self.pause_trials,
                             time=set_time,
                         )
-                            
+
                     # Turn off LED, resuming
                     self.ri.led(2, False)
-                        
+
                     if(user_exit):
                         raise SystemExit()
-                    
+
                     # Save time for next set
                     set_start = datetime.datetime.now().replace(microsecond=0)
             #-------------------------------[Cleanup]-------------------------------
-            
+
             if(self.intell_est=='aggregate'):
                 #process audio from temp file into real file
-                
+
                 #load temp file data
                 test_dat=self.load_test_data(temp_data_filename,load_audio=False)
-                
+
                 #process data and write to final filename
                 intell_est=self.post_process(test_dat,self.data_filename,wavdir)
-            
+
                 #remove temp file
                 os.remove(temp_data_filename)
-                
+
                 if not self.save_audio:
                     #remove all audio files from wavdir
                     for name in glob.iglob(os.path.join(wavdir,'*.wav')):
                         os.remove(name)
-                    
+
             elif(self.intell_est=='trial'):
                 #move temp file to real file
                 shutil.move(temp_data_filename,self.data_filename)
                 #load file data
                 test_dat=self.load_test_data(self.data_filename,load_audio=False)
-                
+
                 #no intelligibility estimation needed
                 self.intell_est='none'
-                
+
                 #process data and get intelligibility estimate
                 intell_est=self.post_process(test_dat,os.devnull,wavdir)
 
@@ -512,11 +512,11 @@ class measure:
                 shutil.move(temp_data_filename,self.data_filename)
                 #dummy intell_est
                 intell_est=np.nan
-            
+
             #---------------------------[Turn off RI LED]---------------------------
-            
+
             self.ri.led(1,False)
-        
+
         finally:
             if(self.get_post_notes):
                 #get notes
@@ -525,9 +525,9 @@ class measure:
                 info={}
             #finish log entry
             mcvqoe.base.post(outdir=self.outdir,info=info)
-            
+
         return (intell_est)
-        
+
     def process_audio(self,fname,rec_chans):
         """
         estimate intelligibility for an audio clip.
@@ -545,12 +545,12 @@ class measure:
             returns a dictionary with estimated values
 
         """
-        
+
         #---------------------[Load in recorded audio]---------------------
         fs,rec_dat = mcvqoe.base.audio_read(fname)
         if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
-        
+
         #check if we have more than one channel
         if(rec_dat.ndim !=1 ):
             #get the index of the voice channel
@@ -563,27 +563,27 @@ class measure:
         rec_dat=mcvqoe.base.audio_float(voice_dat)
 
         #---------------------[Compute intelligibility]---------------------
-        
-    
+
+
         word_num=abcmrt.file2number(fname)
-        
+
         #check if we should process audio
         if(self.intell_est=='trial'):
             phi_hat,success=abcmrt.process(voice_dat,word_num)
-            
+
             #only one element in list, convert to scalar
             success=success[0]
         else:
             success=np.nan
 
-            
+
         return {
                     'Intelligibility':success,
                     'channels':chans_to_string(rec_chans),
                     'voice':voice_dat,
                     'wnum':word_num,
                 }
-        
+
     def load_test_data(self,fname,load_audio=True,audio_path=None):
         """
         load test data from .csv file.
@@ -594,7 +594,7 @@ class measure:
             filename to load
         load_audio : bool, default=True
             if True, finds and loads audio clips and cutpoints based on fname
-        audio_path : str, default=None  
+        audio_path : str, default=None
             Path to find audio files at. Guessed from fname if None.
 
         Returns
@@ -603,7 +603,7 @@ class measure:
             returns data from the .csv file
 
         """
-        
+
         #set audio path for reprocess
         if(audio_path is not None):
             self.audio_path=audio_path
@@ -612,7 +612,7 @@ class measure:
             dat_name,_=os.path.splitext(os.path.basename(fname))
             #set audio_path based on filename
             self.audio_path=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
-            
+
         with open(fname,'rt') as csv_f:
             #create dict reader
             reader=csv.DictReader(csv_f)
@@ -638,14 +638,14 @@ class measure:
                     except KeyError:
                         #not in data_fields, convert to float
                         row[k]=float(row[k]);
-                        
+
                 #append row to data
                 data.append(row)
-                
+
         #set total number of trials, this gives better progress updates
         #set total number of trials, this gives better progress updates
         self.trials=len(data)
-        
+
         return data
 
     def post_process(self,test_dat,fname,audio_path):
@@ -665,10 +665,10 @@ class measure:
         -------
 
         """
-        
+
         #get .csv header and data format
         header,dat_format=self.csv_header_fmt()
-        
+
         with open(fname,'wt') as f_out:
 
             f_out.write(header)
@@ -678,12 +678,12 @@ class measure:
             success=[]
 
             for n,trial in enumerate(test_dat):
-                
+
                 #update progress
                 self.progress_update('proc',self.trials,n)
                 #create clip file name
                 clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
-                
+
                 try:
                     #attempt to get channels from data
                     rec_chans=trial['channels']
@@ -697,10 +697,10 @@ class measure:
                             os.path.join(audio_path,clip_name),
                             rec_chans
                             )
-                
+
                 #default, take data from csv
                 merged_dat=trial
-                
+
                 if(self.intell_est=='trial'):
                     #overwrite new data with old and merge
                     merged_dat={**trial, **new_dat}
@@ -709,7 +709,7 @@ class measure:
                 else:
                     #make audio channels correct
                     merged_dat['channels']=chans_to_string(trial['channels'])
-                    
+
                     if(self.intell_est=='aggregate'):
                         speech.append(new_dat['voice'])
                         clip_num.append(new_dat['wnum'])
@@ -718,7 +718,7 @@ class measure:
                         success.append(trial['Intelligibility'])
 
                 #write line with new data
-                f_out.write(dat_format.format(**merged_dat))                
+                f_out.write(dat_format.format(**merged_dat))
 
             if(not (self.intell_est=='aggregate')):
                 phi_hat=abcmrt.guess_correction(np.mean(success))
@@ -726,5 +726,5 @@ class measure:
 				#give be patient update#update progress
                 self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
                 phi_hat,success=abcmrt.process(speech,clip_num)
-                
+
             return phi_hat
