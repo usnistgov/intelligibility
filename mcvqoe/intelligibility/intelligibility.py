@@ -11,9 +11,12 @@ import sys
 import time
 
 import numpy as np
+import scipy.signal
 
 from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update, terminal_user_check
+from mcvqoe.delay.ITS_delay import active_speech_level
+from fractions import Fraction
 
 #version import for logging purposes
 from .version import version
@@ -53,6 +56,10 @@ class measure:
         Number of extra seconds of audio to record at the end of a trial
     trials : int
         Number of times audio will be run through the system in the run method
+    bgnoise_file : string
+        Name of audio file to use as background noise during measurement.
+    bgnoise_snr : float, default=50
+        Signal to noise ratio for voice vs noise.
     outdir : string
         Base directory where data is stored.
     ri : mcvqoe.RadioInterface or mcvqoe.QoEsim
@@ -159,6 +166,8 @@ class measure:
         self.info = {'Test Type': 'default', 'Pre Test Notes': None}
         self.ptt_wait = 0.68
         self.ptt_gap = 3.1
+        self.bgnoise_file = ""
+        self.bgnoise_snr = 50
         self.audio_interface = None
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
@@ -203,6 +212,13 @@ class measure:
             raise ValueError(
                 f'Trials must be between 1-1200, {self.trials} is invalid.'
                 )
+
+        # Get bgnoise_file and resample
+        if self.bgnoise_file:
+            nfs, nf = mcvqoe.base.audio_read(self.bgnoise_file)
+            rs = Fraction(abcmrt.fs / nfs)
+            nf = scipy.signal.resample_poly(nf, rs.numerator, rs.denominator)
+
         # Get file order
         file_order = abcmrt.file_order()
         # Initialize where audio will be stored
@@ -224,6 +240,23 @@ class measure:
                     f'Expected fs to be {abcmrt.fs} but got {fs} for'
                     f' {file_path}'
                     ))
+
+                        # check if we are adding noise
+            if self.bgnoise_file:
+
+                # measure amplitude of signal and noise
+                sig_level = active_speech_level(audio_data, abcmrt.fs)
+                noise_level = active_speech_level(nf, abcmrt.fs)
+
+                # calculate noise gain required to get desired SNR
+                noise_gain = sig_level - (self.bgnoise_snr + noise_level)
+
+                # set noise to the correct level
+                noise_scaled = nf * (10 ** (noise_gain / 20))
+
+                # add noise (repeated to audio file size)
+                audio_data = audio_data + np.resize(noise_scaled, audio_data.size)
+
             self.y.append(audio_data)
             self.audio_files.append(file_name)
 
