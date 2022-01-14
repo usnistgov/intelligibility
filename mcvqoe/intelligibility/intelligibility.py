@@ -609,7 +609,7 @@ class measure:
             self.audio_path=audio_path
         else:
             #get datafile name for test
-            dat_name,_=os.path.splitext(os.path.basename(fname))
+            dat_name = mcvqoe.base.get_meas_basename(fname)
             #set audio_path based on filename
             self.audio_path=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
 
