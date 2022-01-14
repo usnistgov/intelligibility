@@ -5,6 +5,7 @@ Created on Thu Oct  7 12:47:39 2021
 @author: jkp4
 """
 import argparse
+import json
 import os
 import re
 import warnings
@@ -56,37 +57,41 @@ class evaluate():
     """
 
     def __init__(self,
-                 test_names,
+                 test_names=None,
                  test_path='',
                  use_reprocess=False,
+                 json_data=None,
                  **kwargs):
-        # If only one test, make a list for iterating
-        if isinstance(test_names, str):
-            test_names = [test_names]
-        # TODO Make this more like psud
-        # Initialize full paths attribute
-        self.full_paths = []
-        self.test_names = []
-        for test_name in test_names:
-            # split name to get path and name
-            # if it's just a name all goes into name
-            dat_path, name = os.path.split(test_name)
-            
-            # If no extension given use csv
-            fname, fext = os.path.splitext(test_name)
-            self.test_names.append(os.path.basename(fname))
-            # check if a path was given to a .csv file
-            if not dat_path and not fext == '.csv':
-                # generate using test_path
-                dat_path = os.path.join(test_path, 'csv')
-                dat_file = os.path.join(dat_path, fname +'.csv')
-            else:
-                dat_file = test_name
-
-            self.full_paths.append(dat_file)
-
-        self.data = None
-        self.load_data()
+        if json_data is None:
+            # If only one test, make a list for iterating
+            if isinstance(test_names, str):
+                test_names = [test_names]
+            # TODO Make this more like psud
+            # Initialize full paths attribute
+            self.full_paths = []
+            self.test_names = []
+            for test_name in test_names:
+                # split name to get path and name
+                # if it's just a name all goes into name
+                dat_path, name = os.path.split(test_name)
+                
+                # If no extension given use csv
+                fname, fext = os.path.splitext(test_name)
+                self.test_names.append(os.path.basename(fname))
+                # check if a path was given to a .csv file
+                if not dat_path and not fext == '.csv':
+                    # generate using test_path
+                    dat_path = os.path.join(test_path, 'csv')
+                    dat_file = os.path.join(dat_path, fname +'.csv')
+                else:
+                    dat_file = test_name
+    
+                self.full_paths.append(dat_file)
+    
+            self.data = None
+            self.load_data()
+        else:
+            self.data, self.test_names, self.full_paths = evaluate.load_json_data(json_data)
         
         # Check for kwargs
         for k, v in kwargs.items():
@@ -117,6 +122,69 @@ class evaluate():
         
         self.data = data
         
+    def to_json(self, filename=None):
+        """
+        Create json representation of m2e data
+
+        Parameters
+        ----------
+        filename : str, optional
+            If given save to json file. Otherwise returns json string. The default is None.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        out_json = {
+            'measurement': self.data.to_json(),
+            'test_names': self.test_names,
+            'test_paths': self.full_paths,
+                }
+        
+        # Final json representation of all data
+        final_json = json.dumps(out_json)
+        if filename is not None:
+            with open(filename, 'w') as f:
+                json.dump(out_json, f)
+        
+        return final_json
+    
+    @staticmethod
+    def load_json_data(json_data):
+        """
+        Do all data loading from input json_data
+
+        Parameters
+        ----------
+        json_data : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        test_names : list
+            DESCRIPTION.
+        test_paths : dict
+            DESCRIPTION.
+        data : pd.DataFrame
+            DESCRIPTION.
+        cps : dict
+            DESCRIPTION.
+
+        """
+        # TODO: Should handle correction data too!
+        if isinstance(json_data, str):
+            json_data = json.loads(json_data)
+        # Extract data, cps, and test_info from json_data
+        data = pd.read_json(json_data['measurement'])
+        
+        test_names = json_data['test_names']
+        test_paths = json_data['test_paths']
+        
+        
+        # Return normal Access data attributes from these
+        return data, test_names, test_paths, 
     
     def eval(self, p=0.95, method='t'):
         """
