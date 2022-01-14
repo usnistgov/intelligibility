@@ -1,6 +1,6 @@
 # PURPOSE
 
-The purpose of this software is to measure the intelligibility. This measurement
+The purpose of this software is to measure speech intelligibility of a push-to-talk network. This measurement
 system uses the ABC_MRT as developed by ITS to compute intelligibility.
 
 # MORE INFORMATION
@@ -19,9 +19,9 @@ https://www.its.bldrdoc.gov/publications/download/Voran-ICASSP17.pdf
 - 1 computer able to run Python 3.6 or newer
 - 1 audio interface
 - 2 communications devices for testing
-- QoE box for connecting radios to
-- cables to connect test devices to QoE box
-- Audio cables to connect QoE box to audio interface
+- QoE hardware
+- cables to connect test devices to QoE hardware
+- Audio cables to connect QoE hardware to audio interface
 
 # RUNNING MEASUREMENT SOFTWARE
 
