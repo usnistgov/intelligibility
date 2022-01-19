@@ -136,11 +136,12 @@ class evaluate():
         None.
 
         """
-        
+        test_info = {}
+        for tname, tpath in zip(self.test_names, self.full_paths):
+            test_info[tname] = tpath
         out_json = {
             'measurement': self.data.to_json(),
-            'test_names': self.test_names,
-            'test_paths': self.full_paths,
+            'test_info': test_info
                 }
         
         # Final json representation of all data
@@ -169,18 +170,19 @@ class evaluate():
             DESCRIPTION.
         data : pd.DataFrame
             DESCRIPTION.
-        cps : dict
-            DESCRIPTION.
-
         """
         # TODO: Should handle correction data too!
         if isinstance(json_data, str):
             json_data = json.loads(json_data)
         # Extract data, cps, and test_info from json_data
         data = pd.read_json(json_data['measurement'])
+        test_info = json_data['test_info']
         
-        test_names = json_data['test_names']
-        test_paths = json_data['test_paths']
+        test_names = []
+        test_paths = []
+        for tname, tpath in test_info.items():
+            test_names.append(tname)
+            test_paths.append(tpath)
         
         
         # Return normal Access data attributes from these
