@@ -1,6 +1,6 @@
 # PURPOSE
 
-The purpose of this software is to measure the intelligibility. This measurement
+The purpose of this software is to measure speech intelligibility of a push-to-talk network. This measurement
 system uses the ABC_MRT as developed by ITS to compute intelligibility.
 
 # MORE INFORMATION
@@ -8,17 +8,33 @@ system uses the ABC_MRT as developed by ITS to compute intelligibility.
 A description of the ABC_MRT16 algorithm can be found at 
 https://www.its.bldrdoc.gov/publications/download/Voran-ICASSP17.pdf
 
+# OBTAINING SOFTWARE
+
+- Intelligibility measurement software available at:  https://github.com/usnistgov/intelligibility
+- MCV QoE GUI software available at : https://github.com/usnistgov/mcvqoe
+- Core MCV QoE library available at : https://github.com/usnistgov/mcvqoe-base
+
 # HARDWARE REQUIREMENTS
+
 - 1 computer able to run Python 3.6 or newer
 - 1 audio interface
 - 2 communications devices for testing
-- QoE box for connecting radios to
-- cables to connect test devices to QoE box
-- Audio cables to connect QoE box to audio interface
+- QoE hardware
+- cables to connect test devices to QoE hardware
+- Audio cables to connect QoE hardware to audio interface
 
 # RUNNING MEASUREMENT SOFTWARE
 
 The easiest way to use the measurement system is to run the GUI (https://github.com/usnistgov/mcvqoe).
+
+## Installation of Software
+
+To install the `mcvqoe-psud` package, clone this repository and run the 
+following from the root of the git repository:
+
+```
+pip install .
+```
 
 # TECHNICAL SUPPORT
 For more information or assistance on access delay measurements please contact:
@@ -63,4 +79,4 @@ the Collaborator, or others acting on its behalf, of products made
 by the use of NTIA/ITS' Software.
 
 
-**Audio files included with this software were derived from the MRT Audio Library.**
+**Audio files included with this software are from the MRT Audio Library.**
