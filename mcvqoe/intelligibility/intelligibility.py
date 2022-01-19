@@ -40,7 +40,7 @@ def parse_audio_chans(csv_str):
 
     return tuple(match.group('chans').split(';'))
 
-class measure:
+class measure(mcvqoe.base.Measure):
     """
     Class to run and reprocess ABC_MRT Intelligibility tests.
 
@@ -166,6 +166,7 @@ class measure:
         self.info = {'Test Type': 'default', 'Pre Test Notes': None}
         self.ptt_wait = 0.68
         self.ptt_gap = 3.1
+        self.test = "1loc"
         self.bgnoise_file = ""
         self.bgnoise_snr = 50
         self.audio_interface = None
@@ -282,7 +283,7 @@ class measure:
 
         return (hdr,fmt)
 
-    def run(self):
+    def run_1loc(self):
         """
         run a test with the properties of the class.
 
