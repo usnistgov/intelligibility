@@ -84,9 +84,6 @@ class measure(mcvqoe.base.Measure):
         are dictionary keys and the values are conversion functions to get from
         string to the appropriate type. This should not be modified in most
         cases
-    intell_est : {'trial','aggregate','none'}, default='trial'
-        Control when, and how, intelligibility and mouth to ear estimations are
-        done.
     no_log : tuple of strings
         static property that is a tuple of property names that will not be added
         to the 'Arguments' field in the log. This should not be modified in most
@@ -155,6 +152,8 @@ class measure(mcvqoe.base.Measure):
     no_log = ('y', 'clipi', 'data_dir', 'wav_data_dir', 'csv_data_dir',
               'data_fields', '_audio_order')
 
+    measurement_name = "Intelligibility"
+
     def __init__(self, **kwargs):
 
         self.rng = np.random.default_rng()
@@ -173,7 +172,6 @@ class measure(mcvqoe.base.Measure):
         self.full_audio_dir = False
         self.progress_update = terminal_progress_update
         self.user_check = terminal_user_check
-        self.intell_est = 'trial'
         self.save_tx_audio = False
         self.save_audio = True
         self._pause_count = 0
@@ -242,7 +240,7 @@ class measure(mcvqoe.base.Measure):
                     f' {file_path}'
                     ))
 
-                        # check if we are adding noise
+            # check if we are adding noise
             if self.bgnoise_file:
 
                 # measure amplitude of signal and noise
@@ -283,258 +281,24 @@ class measure(mcvqoe.base.Measure):
 
         return (hdr,fmt)
 
-    def run_1loc(self):
-        """
-        run a test with the properties of the class.
-
-        Returns
-        -------
-        string
-            name of the .csv file without path or extension
-
-
-        """
-        #-----------------------[Check audio sample rate]-----------------------
-        if(self.audio_interface.sample_rate != abcmrt.fs):
-            raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {abcmrt.fs} Hz is supported')
-        #------------------[Check for correct audio channels]------------------
-        if('tx_voice' not in self.audio_interface.playback_chans.keys()):
-            raise ValueError('self.audio_interface must be set up to play tx_voice')
-        if('rx_voice' not in self.audio_interface.rec_chans.keys()):
-            raise ValueError('self.audio_interface must be set up to record rx_voice')
-        #---------------------[Load Audio Files if Needed]---------------------
-        if(not hasattr(self,'y')):
-            self.load_audio()
-
-        if(self.full_audio_dir):
-            #overide trials to use all the trials
-            self.trials=len(self.y)
-
-        #generate clip index
-        self.clipi=self.rng.permutation(self.trials)%len(self.y)
-
-        #-------------------------[Get Test Start Time]-------------------------
-        self.info['Tstart']=datetime.datetime.now()
-        dtn=self.info['Tstart'].strftime('%d-%b-%Y_%H-%M-%S')
-
-        #--------------------------[Fill log entries]--------------------------
-        #set test name
-        self.info['test']='Intelligibility'
+    def log_extra(self):
         #add abcmrt version
-        self.info['abcmrt version']=abcmrt.version
-        #fill in standard stuff
-        self.info.update(mcvqoe.base.write_log.fill_log(self))
-        #-----------------------[Setup Files and folders]-----------------------
+        self.info['abcmrt version'] = abcmrt.version
 
-        #generate data dir names
-        data_dir=os.path.join(self.outdir,'data')
-        wav_data_dir=os.path.join(data_dir,'wav')
-        csv_data_dir=os.path.join(data_dir,'csv')
+    def test_setup(self):
+        #-----------------------[Check audio sample rate]-----------------------
+        if self.audio_interface is not None and \
+            self.audio_interface.sample_rate != abcmrt.fs:
+            raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {abcmrt.fs} Hz is supported')
 
-
-        #create data directories
-        os.makedirs(csv_data_dir, exist_ok=True)
-        os.makedirs(wav_data_dir, exist_ok=True)
-
-
-        #generate base file name to use for all files
-        base_filename='capture_%s_%s'%(self.info['Test Type'],dtn);
-
-        #generate test dir names
-        wavdir=os.path.join(wav_data_dir,base_filename)
-
-        #create test dir
-        os.makedirs(wavdir, exist_ok=True)
-
-        # get name of audio clip without path or extension
-        clip_names=[os.path.basename(os.path.splitext(a)[0]) for a in self.audio_files]
-
-        #get name of csv files with path and extension
-        self.data_filename=os.path.join(csv_data_dir,f'{base_filename}.csv')
-
-        #get name of temp csv files with path and extension
-        temp_data_filename = os.path.join(csv_data_dir,f'{base_filename}_TEMP.csv')
-
-        if(self.save_tx_audio):
-            #write out Tx clips to files
-            for dat,name in zip(self.y,clip_names):
-                out_name=os.path.join(wavdir,f'Tx_{name}')
-                mcvqoe.base.audio_write(out_name+'.wav', int(self.audio_interface.sample_rate), dat)
-
-        #---------------------------[write log entry]---------------------------
-
-        mcvqoe.base.write_log.pre(info=self.info, outdir=self.outdir)
-
-        #---------------[Try block so we write notes at the end]---------------
-
-        try:
-
-            #---------------------[Save Time for Set Timing]----------------------
-
-            set_start = datetime.datetime.now().replace(microsecond=0)
-
-            #---------------------------[Turn on RI LED]---------------------------
-
-            self.ri.led(1,True)
-
-            #-------------------------[Generate csv header]-------------------------
-
-            header,dat_format=self.csv_header_fmt()
-
-            #-----------------------[write initial csv file]-----------------------
-            with open(temp_data_filename,'wt') as f:
-                f.write(header)
-            #--------------------------[Measurement Loop]--------------------------
-
-            #zero pause count
-            self._pause_count = 0
-
-            #load templates outside the loop so we take the hit here
-            abcmrt.load_templates()
-
-            for trial in range(self.trials):
-                #-----------------------[Update progress]-------------------------
-                if(not self.progress_update('test',self.trials,trial)):
-                    #turn off LED
-                    self.ri.led(1, False)
-
-                    if(user_exit):
-                        raise SystemExit()
-                #-----------------------[Get Trial Timestamp]-----------------------
-                ts=datetime.datetime.now().strftime('%d-%b-%Y %H:%M:%S')
-                #--------------------[Key Radio and play audio]--------------------
-
-                #push PTT
-                self.ri.ptt(True)
-
-                #pause for access
-                time.sleep(self.ptt_wait)
-
-                clip_index=self.clipi[trial]
-
-                #generate filename
-                clip_name=os.path.join(wavdir,f'Rx{trial+1}_{clip_names[clip_index]}.wav')
-
-                #play/record audio
-                rec_chans=self.audio_interface.play_record(self.y[clip_index],clip_name)
-
-                #un-push PTT
-                self.ri.ptt(False)
-                #-----------------------[Pause Between runs]-----------------------
-
-                time.sleep(self.ptt_gap)
-
-                #-------------------------[Process Audio]-------------------------
-
-                trial_dat=self.process_audio(clip_name,rec_chans)
-
-                #check if we will need audio later
-                if(self.intell_est!='aggregate'):
-                    #done with processing, delete file
-                    if(not self.save_audio):
-                        os.remove(clip_name)
-
-                #---------------------------[Write File]---------------------------
-
-                trial_dat['Filename']   = clip_names[self.clipi[trial]]
-                trial_dat['Timestamp']  = ts
-                trial_dat['Over_runs']  = 0
-                trial_dat['Under_runs'] = 0
-
-                with open(temp_data_filename,'at') as f:
-                    f.write(dat_format.format(**trial_dat))
-
-                #------------------[Check if we should pause]------------------
-
-                #increment pause count
-                self._pause_count+=1
-
-                if self._pause_count >= self.pause_trials:
-
-                    #zero pause count
-                    self._pause_count = 0
-
-                    # Calculate set time
-                    time_diff = datetime.datetime.now().replace(microsecond=0)
-                    set_time = time_diff - set_start
-
-                    # Turn on LED when waiting for user input
-                    self.ri.led(2, True)
-
-                    # wait for user
-                    user_exit = self.user_check(
-                            'normal-stop',
-                            'check batteries.',
-                            trials=self.pause_trials,
-                            time=set_time,
-                        )
-
-                    # Turn off LED, resuming
-                    self.ri.led(2, False)
-
-                    if(user_exit):
-                        raise SystemExit()
-
-                    # Save time for next set
-                    set_start = datetime.datetime.now().replace(microsecond=0)
-            #-------------------------------[Cleanup]-------------------------------
-
-            if(self.intell_est=='aggregate'):
-                #process audio from temp file into real file
-
-                #load temp file data
-                test_dat=self.load_test_data(temp_data_filename,load_audio=False)
-
-                #process data and write to final filename
-                intell_est=self.post_process(test_dat,self.data_filename,wavdir)
-
-                #remove temp file
-                os.remove(temp_data_filename)
-
-                if not self.save_audio:
-                    #remove all audio files from wavdir
-                    for name in glob.iglob(os.path.join(wavdir,'*.wav')):
-                        os.remove(name)
-
-            elif(self.intell_est=='trial'):
-                #move temp file to real file
-                shutil.move(temp_data_filename,self.data_filename)
-                #load file data
-                test_dat=self.load_test_data(self.data_filename,load_audio=False)
-
-                #no intelligibility estimation needed
-                self.intell_est='none'
-
-                #process data and get intelligibility estimate
-                intell_est=self.post_process(test_dat,os.devnull,wavdir)
-
-            else:
-                #move temp file to real file
-                shutil.move(temp_data_filename,self.data_filename)
-                #dummy intell_est
-                intell_est=np.nan
-
-            #---------------------------[Turn off RI LED]---------------------------
-
-            self.ri.led(1,False)
-
-        finally:
-            if(self.get_post_notes):
-                #get notes
-                info=self.get_post_notes()
-            else:
-                info={}
-            #finish log entry
-            mcvqoe.base.post(outdir=self.outdir,info=info)
-
-        return (intell_est)
-
-    def process_audio(self,fname,rec_chans):
+    def process_audio(self, clip_index, fname, rec_chans):
         """
         estimate intelligibility for an audio clip.
 
         Parameters
         ----------
+        clip_index : int
+            Clip index, not used for intelligibility.
         fname : str
             audio file to process.
         rec_chans : tuple
@@ -565,18 +329,12 @@ class measure(mcvqoe.base.Measure):
 
         #---------------------[Compute intelligibility]---------------------
 
-
         word_num=abcmrt.file2number(fname)
 
-        #check if we should process audio
-        if(self.intell_est=='trial'):
-            phi_hat,success=abcmrt.process(voice_dat,word_num)
+        phi_hat,success=abcmrt.process(voice_dat,word_num)
 
-            #only one element in list, convert to scalar
-            success=success[0]
-        else:
-            success=np.nan
-
+        #only one element in list, convert to scalar
+        success=success[0]
 
         return {
                     'Intelligibility':success,
@@ -585,9 +343,33 @@ class measure(mcvqoe.base.Measure):
                     'wnum':word_num,
                 }
 
+    # overide so we don't need to load audio
+    def find_clip_index(self, name):
+        """
+        Dummy function, to return a fake clip index.
+
+        Clip index is not needed for Intelligibility reprocess, so this returns
+        a dummy value
+
+        Parameters
+        ----------
+        name : string
+            base name of audio clip
+
+        Returns
+        -------
+        int
+            Dummy index.
+
+        """
+
+        return -1
+
     def load_test_data(self,fname,load_audio=True,audio_path=None):
         """
         load test data from .csv file.
+
+        This exists here because we don't need to load the Tx audio.
 
         Parameters
         ----------
@@ -648,84 +430,3 @@ class measure(mcvqoe.base.Measure):
         self.trials=len(data)
 
         return data
-
-    def post_process(self,test_dat,fname,audio_path):
-        """
-        process csv data.
-
-        Parameters
-        ----------
-        test_data : list of dicts
-            csv data for trials to process
-        fname : string
-            file name to write processed data to
-        audio_path : string
-            where to look for recorded audio clips
-
-        Returns
-        -------
-
-        """
-
-        #get .csv header and data format
-        header,dat_format=self.csv_header_fmt()
-
-        with open(fname,'wt') as f_out:
-
-            f_out.write(header)
-
-            speech=[]
-            clip_num=[]
-            success=[]
-
-            for n,trial in enumerate(test_dat):
-
-                #update progress
-                self.progress_update('proc',self.trials,n)
-                #create clip file name
-                clip_name='Rx'+str(n+1)+'_'+trial['Filename']+'.wav'
-
-                try:
-                    #attempt to get channels from data
-                    rec_chans=trial['channels']
-                except KeyError:
-                    #fall back to only one channel
-                    rec_chans=('rx_voice')
-
-                #check if we skip audio loading/intelligibility estimation
-                if(not (self.intell_est=='none')):
-                    new_dat=self.process_audio(
-                            os.path.join(audio_path,clip_name),
-                            rec_chans
-                            )
-
-                #default, take data from csv
-                merged_dat=trial
-
-                if(self.intell_est=='trial'):
-                    #overwrite new data with old and merge
-                    merged_dat={**trial, **new_dat}
-                    #save success
-                    success.append(new_dat['Intelligibility'])
-                else:
-                    #make audio channels correct
-                    merged_dat['channels']=chans_to_string(trial['channels'])
-
-                    if(self.intell_est=='aggregate'):
-                        speech.append(new_dat['voice'])
-                        clip_num.append(new_dat['wnum'])
-                    else:
-                        #take success from original data
-                        success.append(trial['Intelligibility'])
-
-                #write line with new data
-                f_out.write(dat_format.format(**merged_dat))
-
-            if(not (self.intell_est=='aggregate')):
-                phi_hat=abcmrt.guess_correction(np.mean(success))
-            else:
-				#give be patient update#update progress
-                self.progress_update('status',self.trials,self.trials,msg='Processing intelligibility for all clips, this could take a while...')
-                phi_hat,success=abcmrt.process(speech,clip_num)
-
-            return phi_hat
