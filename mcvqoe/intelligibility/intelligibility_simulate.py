@@ -222,9 +222,11 @@ def main():
     
     
     #--------------------------------[Run Test]--------------------------------
-    intell_est = test_obj.run()
-    print(f'Intelligibility estimate = {intell_est}')
-    print(f'Test complete, data saved in \'{test_obj.data_filename}\'')
+    intell_file = test_obj.run()
+    eval_obj = intell.evaluate(intell_file)
+    intell_est, ci = eval_obj.eval()
+    print(f'Intelligibility estimate and confidenc tnterval = {intell_est}, {ci}')
+    print(f'Test complete, data saved in \'{intell_file}\'')
     
 
 #-----------------------------[main function]-----------------------------
