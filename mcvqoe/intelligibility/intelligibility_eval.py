@@ -106,7 +106,7 @@ class evaluate():
         """
         Load data stored in test_names and test_paths, stores it in self.data
         """
-        data = pd.DataFrame()
+        data = []
         for fpath in self.full_paths:
             # Load data
             test = pd.read_csv(fpath)
@@ -115,10 +115,9 @@ class evaluate():
             name, ext = os.path.splitext(tname)
             # Store testname
             test['name'] = name
-            data = data.append(test)
-        # Ensure that tests has unique row index
-        nrow, _ = data.shape
-        data.index = np.arange(nrow)
+            data.append(test)
+        
+        data = pd.concat(data, ignore_index=True)
         
         self.data = data
         
@@ -226,21 +225,21 @@ class evaluate():
         df = self.data
         # Filter by session name if given
         if test_name is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if not isinstance(test_name, list):
                 test_name = [test_name]
             for name in test_name:
-                df_filt = df_filt.append(df[df['name'] == name])
-            df = df_filt
+                df_filt.append(df[df['name'] == name])
+            df = pd.concat(df_filt)
         # Filter by talkers if given
         if talkers is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if isinstance(talkers, str):
                 talkers = [talkers]
             for talker in talkers:
                 ix = [talker in x for x in df['Filename']]
-                df_filt = df_filt.append(df[ix])
-            df = df_filt
+                df_filt.append(df[ix])
+            df = pd.concat(df_filt)
         fig = go.Figure()
         fig.add_trace(
             go.Histogram(
@@ -283,24 +282,24 @@ class evaluate():
         # Filter by session name if given
         # Filter by session name if given
         if test_name is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if not isinstance(test_name, list):
                 test_name = [test_name]
             for name in test_name:
-                df_filt = df_filt.append(df[df['name'] == name])
-            df = df_filt
+                df_filt.append(df[df['name'] == name])
+            df = pd.concat(df_filt)
         # Filter by talkers if given
         if talkers is not None:
-            df_filt = pd.DataFrame()
+            df_filt = []
             if isinstance(talkers, str):
                 talkers = [talkers]
             for talker in talkers:
                 ix = [talker in x for x in df['Filename']]
-                df_sub = df[ix]
+                df_sub = df[ix].copy()
                 df_sub['Talker'] = talker
-                df_filt = df_filt.append(df_sub)
+                df_filt.append(df_sub)
                 
-            df = df_filt
+            df = pd.concat(df_filt)
         else:
             # TODO: Consider just dropping this into init/data load, might make things easier
             pattern = re.compile(r'([FM]\d)(?:_b\d{1,2}_w\d)')
