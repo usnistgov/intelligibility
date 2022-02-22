@@ -277,6 +277,7 @@ class evaluate():
         return fig
     
     def plot(self, test_name=None, talkers=None, x=None,
+             color_palette=px.colors.qualitative.Plotly,
              title='Scatter plot of intelligibility scores'):
         df = self.data
         # Filter by session name if given
@@ -324,6 +325,7 @@ class evaluate():
                           labels={
                               'index': 'Trial Number',
                               },
+                          color_discrete_sequence=color_palette,
                           )
         fig.update_layout(legend=dict(
             yanchor="bottom",
