@@ -28,8 +28,12 @@ https://www.its.bldrdoc.gov/publications/download/Voran-ICASSP17.pdf
 The easiest way to use the measurement system is to run the GUI (https://github.com/usnistgov/mcvqoe).
 
 ## Installation of Software
+To install the package run the following:
+```
+pip install mcvqoe-intelligibility
+```
 
-To install the `mcvqoe-psud` package, clone this repository and run the 
+Alternatively, to install the `mcvqoe-intelligibility` package, clone this repository and run the 
 following from the root of the git repository:
 
 ```
