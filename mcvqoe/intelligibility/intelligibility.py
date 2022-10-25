@@ -10,6 +10,7 @@ import shutil
 import sys
 import time
 
+import mcvqoe.intelligibility.intelligibility_eval as evaluation
 import numpy as np
 import scipy.signal
 
@@ -18,22 +19,21 @@ from mcvqoe.base.terminal_user import terminal_progress_update, terminal_user_ch
 from mcvqoe.delay.ITS_delay import active_speech_level
 from fractions import Fraction
 
-#version import for logging purposes
+# version import for logging purposes
 from .version import version
 
 def chans_to_string(chans):
-    #check if we got a string
+    # check if we got a string
     if(isinstance(chans, str)):
         raise ValueError('Input can not be str')
-    #channel string
+    # channel string
     return '('+(';'.join(chans))+')'
-
 
 def parse_audio_chans(csv_str):
     '''
     Function to parse audio channels from csv file
     '''
-    match=re.search('\((?P<chans>[^)]+)\)',csv_str)
+    match = re.search('\((?P<chans>[^)]+)\)', csv_str)
 
     if(not match):
         raise ValueError(f'Unable to parse chans {csv_str}, expected in the form "(chan1;chan2;...)"')
@@ -145,10 +145,10 @@ class measure(mcvqoe.base.Measure):
 
 
 
-    #on load conversion to datetime object fails for some reason
-    #TODO : figure out how to fix this, string works for now but this should work too:
-    #row[k]=datetime.datetime.strptime(row[k],'%d-%b-%Y_%H-%M-%S')
-    data_fields={"Timestamp":str,"Filename":str,"channels":parse_audio_chans,'Intelligibility':float}
+    # on load conversion to datetime object fails for some reason
+    # TODO : figure out how to fix this, string works for now but this should work too:
+    # row[k] = datetime.datetime.strptime(row[k], '%d-%b-%Y_%H-%M-%S')
+    data_fields = {"Timestamp":str, "Filename":str, "channels":parse_audio_chans, 'Intelligibility':float}
     no_log = ('y', 'clipi', 'data_dir', 'wav_data_dir', 'csv_data_dir',
               'data_fields', '_audio_order')
 
@@ -273,16 +273,16 @@ class measure(mcvqoe.base.Measure):
         fmt : string
             format string for data lines for the .csv file
         """
-        hdr=','.join(self.data_fields.keys())
-        fmt='{'+'},{'.join(self.data_fields.keys())+'}'
-        #add newlines at the end
+        hdr = ','.join(self.data_fields.keys())
+        fmt = '{'+'},{'.join(self.data_fields.keys())+'}'
+        # add newlines at the end
         hdr+='\n'
         fmt+='\n'
 
-        return (hdr,fmt)
+        return (hdr, fmt)
 
     def log_extra(self):
-        #add abcmrt version
+        # add abcmrt version
         self.info['abcmrt version'] = abcmrt.version
 
         # Add blocksize and buffersize
@@ -290,7 +290,9 @@ class measure(mcvqoe.base.Measure):
         self.buffersize = self.audio_interface.buffersize
 
     def test_setup(self):
+        
         #-----------------------[Check audio sample rate]-----------------------
+        
         if self.audio_interface is not None and \
             self.audio_interface.sample_rate != abcmrt.fs:
             raise ValueError(f'audio_interface sample rate is {self.audio_interface.sample_rate} Hz but only {abcmrt.fs} Hz is supported')
@@ -316,29 +318,30 @@ class measure(mcvqoe.base.Measure):
         """
 
         #---------------------[Load in recorded audio]---------------------
-        fs,rec_dat = mcvqoe.base.audio_read(fname)
+        
+        fs, rec_dat = mcvqoe.base.audio_read(fname)
         if(abcmrt.fs != fs):
             raise RuntimeError('Recorded sample rate does not match!')
 
-        #check if we have more than one channel
+        # check if we have more than one channel
         if(rec_dat.ndim !=1 ):
-            #get the index of the voice channel
-            voice_idx=rec_chans.index('rx_voice')
-            #get voice channel
-            voice_dat=rec_dat[:,voice_idx]
+            # get the index of the voice channel
+            voice_idx = rec_chans.index('rx_voice')
+            # get voice channel
+            voice_dat = rec_dat[:,voice_idx]
         else:
-            voice_dat=rec_dat
+            voice_dat = rec_dat
 
-        rec_dat=mcvqoe.base.audio_float(voice_dat)
+        rec_dat = mcvqoe.base.audio_float(voice_dat)
 
         #---------------------[Compute intelligibility]---------------------
 
-        word_num=abcmrt.file2number(fname)
+        word_num = abcmrt.file2number(fname)
 
-        phi_hat,success=abcmrt.process(voice_dat,word_num)
+        phi_hat, success = abcmrt.process(voice_dat, word_num)
 
-        #only one element in list, convert to scalar
-        success=success[0]
+        # only one element in list, convert to scalar
+        success = success[0]
 
         return {
                     'Intelligibility':success,
@@ -369,7 +372,7 @@ class measure(mcvqoe.base.Measure):
 
         return -1
 
-    def load_test_data(self,fname,load_audio=True,audio_path=None):
+    def load_test_data(self, fname, load_audio=True, audio_path=None):
         """
         load test data from .csv file.
 
@@ -391,46 +394,97 @@ class measure(mcvqoe.base.Measure):
 
         """
 
-        #set audio path for reprocess
+        # set audio path for reprocess
         if(audio_path is not None):
-            self.audio_path=audio_path
+            self.audio_path = audio_path
         else:
-            #get datafile name for test
+            # get datafile name for test
             dat_name = mcvqoe.base.get_meas_basename(fname)
-            #set audio_path based on filename
-            self.audio_path=os.path.join(os.path.dirname(os.path.dirname(fname)),'wav',dat_name)
+            # set audio_path based on filename
+            self.audio_path = os.path.join(os.path.dirname(os.path.dirname(fname)), 'wav', dat_name)
 
         with open(fname,'rt') as csv_f:
-            #create dict reader
-            reader=csv.DictReader(csv_f)
-            #create empty list
-            data=[]
-            #create set for audio clips
-            clips=set()
+            # create dict reader
+            reader = csv.DictReader(csv_f)
+            # create empty list
+            data = []
+            # create set for audio clips
+            clips = set()
             for row in reader:
-                #convert values proper datatype
+                # convert values proper datatype
                 for k in row:
-                    #check for clip name
+                    # check for clip name
                     if(k=='Filename'):
-                        #save clips
+                        # save clips
                         clips.add(row[k])
                     try:
-                        #check for None field
+                        # check for None field
                         if(row[k]=='None'):
-                            #handle None correctly
-                            row[k]=None
+                            # handle None correctly
+                            row[k] = None
                         else:
-                            #convert using function from data_fields
-                            row[k]=self.data_fields[k](row[k])
+                            # convert using function from data_fields
+                            row[k] = self.data_fields[k](row[k])
                     except KeyError:
-                        #not in data_fields, convert to float
-                        row[k]=float(row[k]);
+                        # not in data_fields, convert to float
+                        row[k] = float(row[k]);
 
-                #append row to data
+                # append row to data
                 data.append(row)
 
-        #set total number of trials, this gives better progress updates
-        #set total number of trials, this gives better progress updates
-        self.trials=len(data)
+        # set total number of trials, this gives better progress updates
+        self.trials = len(data)
 
         return data
+    
+    def post_write(self):
+        """Overwrites measure class post_write() in order to print PSuD results in
+        tests.log
+        """
+        
+        if self.get_post_notes:
+            # get notes
+            info = {}
+            info.update(self.get_post_notes())
+            eval_obj = evaluation.evaluate(test_names=self.data_filename)
+            info["mean"], info["ci"] = eval_obj.eval()
+        else:
+            info = {}
+            
+        # finish log entry
+        self.post(info=info, outdir=self.outdir)
+        
+    def post(self, info={}, outdir=""):
+        """
+        Take in a QoE measurement class info dictionary to write post-test to tests.log.
+        Specific to Intelligibility
+        ...
+    
+        Parameters
+        ----------
+        info : dict
+            The <measurement>.info dictionary.
+        outdir : str
+            The directory to write to.
+        """
+    
+        # Add 'outdir' to tests.log path
+        log_datadir = os.path.join(outdir, "tests.log")
+        with open(log_datadir, "a") as file:
+            if "Error Notes" in info:
+                notes = info["Error Notes"]
+                header = "===Test-Error Notes==="
+            else:
+                header = "===Post-Test Notes==="
+                notes = info.get("Post Test Notes", "")
+    
+            # Write header
+            file.write(header + "\n")
+            # Write notes
+            file.write("".join(["\t" + line + "\n" for line in notes.splitlines(keepends=False)]))
+            # Write results
+            file.write("===Intelligibility Results===" + "\n")
+            file.write("\t" + f"Intelligibility Estimate: {info['mean']}" + "\n" + "\t" +
+                       f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
+            # Write end
+            file.write("===End Test===\n\n")
