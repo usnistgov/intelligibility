@@ -6,16 +6,15 @@ Created on Thu Oct  7 12:47:39 2021
 """
 import argparse
 import json
+import mcvqoe.math
 import os
 import re
 import warnings
 
-import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
-import mcvqoe.math
+import plotly.graph_objects as go
 
 
 # Main class for evaluating
@@ -219,7 +218,54 @@ class evaluate():
                     )
         
         return self.mean, self.ci
-    
+
+    # Reference bar graph intelligibility values
+    def bar(self, test_name=None, talkers=None,
+                  title='Bar Graph of Reference Intelligibility Values'):
+        
+        # Intelligibility titles
+        intell = ['Mean Intelligibility', 
+                  'P25 Full Rate Reference',
+                  'P25 Half Rate Reference',
+                  '25 kHz AFM Reference',
+                  '12.5 kHz AFM Reference']
+        
+        df = self.data
+        # Filter by session name if given
+        if test_name is not None:
+            df_filt = []
+            if not isinstance(test_name, list):
+                test_name = [test_name]
+            for name in test_name:
+                df_filt.append(df[df['name'] == name])
+            df = pd.concat(df_filt)
+        # Filter by talkers if given
+        if talkers is not None:
+            df_filt = []
+            if isinstance(talkers, str):
+                talkers = [talkers]
+            for talker in talkers:
+                ix = [talker in x for x in df['Filename']]
+                df_filt.append(df[ix])
+            df = pd.concat(df_filt)
+            
+        # Intell bar graph    
+        fig = go.Figure([go.Bar(x=intell, y=[self.mean, 0.866, 0.843, 0.896, 0.907],
+                                marker_color=['red','grey','grey','grey','grey'])])
+        
+        if self.mean > 0.7:
+            fig.update_yaxes(range=[0.7, 1], mirror=True)
+        else:
+            fig.update_yaxes(range=[self.mean-0.2, 1], mirror=True)
+            
+        fig.update_layout(
+            title=title,
+            autosize=False,
+            width=500,
+            height=500)
+        
+        return fig
+
     def histogram(self, test_name=None, talkers=None,
                   title='Histogram of intelligibility values'):
         df = self.data
@@ -280,7 +326,6 @@ class evaluate():
              color_palette=px.colors.qualitative.Plotly,
              title='Scatter plot of intelligibility scores'):
         df = self.data
-        # Filter by session name if given
         # Filter by session name if given
         if test_name is not None:
             df_filt = []
