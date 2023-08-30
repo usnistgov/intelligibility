@@ -1,20 +1,14 @@
 import abcmrt
 import csv
-import datetime
-import glob
 import mcvqoe.base
 import os.path
 import pkg_resources
 import re
-import shutil
-import sys
-import time
 
 import mcvqoe.intelligibility.intelligibility_eval as evaluation
 import numpy as np
 import scipy.signal
 
-from distutils.util import strtobool
 from mcvqoe.base.terminal_user import terminal_progress_update, terminal_user_check
 from mcvqoe.delay.ITS_delay import active_speech_level
 from fractions import Fraction
@@ -437,7 +431,7 @@ class measure(mcvqoe.base.Measure):
 
         return data
     
-    def post_write(self):
+    def post_write(self, test_folder=""):
         """Overwrites measure class post_write() in order to print PSuD results in
         tests.log
         """
@@ -452,9 +446,9 @@ class measure(mcvqoe.base.Measure):
             info = {}
             
         # finish log entry
-        self.post(info=info, outdir=self.outdir)
+        self.post(info=info, outdir=self.outdir, test_folder=self.data_dir)
         
-    def post(self, info={}, outdir=""):
+    def post(self, info={}, outdir="", test_folder=""):
         """
         Take in a QoE measurement class info dictionary to write post-test to tests.log.
         Specific to Intelligibility
@@ -488,3 +482,26 @@ class measure(mcvqoe.base.Measure):
                        f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
             # Write end
             file.write("===End Test===\n\n")
+            
+        # Add 'test_folder' to tests.log path (if given)
+        if test_folder != "":
+            
+            log_folder = os.path.join(test_folder, "tests.log")
+            with open(log_folder, "a") as file:
+                if "Error Notes" in info:
+                    notes = info["Error Notes"]
+                    header = "===Test-Error Notes==="
+                else:
+                    header = "===Post-Test Notes==="
+                    notes = info.get("Post Test Notes", "")
+        
+                # Write header
+                file.write(header + "\n")
+                # Write notes
+                file.write("".join(["\t" + line + "\n" for line in notes.splitlines(keepends=False)]))
+                # Write results
+                file.write("===Intelligibility Results===" + "\n")
+                file.write("\t" + f"Intelligibility Estimate: {info['mean']}" + "\n" + "\t" +
+                           f'95% Confidence Interval: {np.array2string(info["ci"], separator=", ")}' + "\n")
+                # Write end
+                file.write("===End Test===\n\n")
