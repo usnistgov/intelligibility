@@ -169,6 +169,10 @@ class measure(mcvqoe.base.Measure):
         self.save_tx_audio = False
         self.save_audio = True
         self._pause_count = 0
+        # Need these to save in case of multiple iterations
+        self.data_filename = []
+        self.data_dirs = []
+        self.iterations = 1
 
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -185,6 +189,21 @@ class measure(mcvqoe.base.Measure):
             num = abcmrt.file2number(fname)
             # Store audio file name with the key of its number
             self._audio_order[num] = fname
+
+    def param_check(self):
+        """
+        Check that parameters are correct.
+        
+        Raises
+        ------
+        ValueError
+            If there is an incorrect parameter.
+        """
+        
+        if self.iterations < 1:
+            raise ValueError(
+                f"Can't have less than 1 iteration. {self.iterations} iterations chosen."
+                )
 
     def load_audio(self):
         """
@@ -431,7 +450,7 @@ class measure(mcvqoe.base.Measure):
 
         return data
     
-    def post_write(self, test_folder=""):
+    def post_write(self, test_folder="", file=""):
         """Overwrites measure class post_write() in order to print PSuD results in
         tests.log
         """
@@ -440,13 +459,13 @@ class measure(mcvqoe.base.Measure):
             # get notes
             info = {}
             info.update(self.get_post_notes())
-            eval_obj = evaluation.evaluate(test_names=self.data_filename)
+            eval_obj = evaluation.evaluate(test_names=file)
             info["mean"], info["ci"] = eval_obj.eval()
         else:
             info = {}
             
         # finish log entry
-        self.post(info=info, outdir=self.outdir, test_folder=self.data_dir)
+        self.post(info=info, outdir=self.outdir, test_folder=test_folder)
         
     def post(self, info={}, outdir="", test_folder=""):
         """
