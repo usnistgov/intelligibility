@@ -459,13 +459,15 @@ class measure(mcvqoe.base.Measure):
             # get notes
             info = {}
             info.update(self.get_post_notes())
-            eval_obj = evaluation.evaluate(test_names=file)
-            info["mean"], info["ci"] = eval_obj.eval()
+            for itr in range(len(file)):
+                eval_obj = evaluation.evaluate(test_names=file[itr])
+                info["mean"], info["ci"] = eval_obj.eval()
+                self.post(info=info, outdir=self.outdir, test_folder=test_folder[itr])
         else:
             info = {}
-            
-        # finish log entry
-        self.post(info=info, outdir=self.outdir, test_folder=test_folder)
+            # finish log entry
+            for itr in range(len(file)):
+                self.post(info=info, outdir=self.outdir, test_folder=test_folder[itr])
         
     def post(self, info={}, outdir="", test_folder=""):
         """
