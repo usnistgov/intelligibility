@@ -404,7 +404,6 @@ class measure(mcvqoe.base.Measure):
         -------
         list of dicts
             returns data from the .csv file
-
         """
 
         # set audio path for reprocess
@@ -412,9 +411,9 @@ class measure(mcvqoe.base.Measure):
             self.audio_path = audio_path
         else:
             # get datafile name for test
-            dat_name = mcvqoe.base.get_meas_basename(fname)
+            dat_name = mcvqoe.base.get_meas_basename(fname) + "_2LocReprocess"
             # set audio_path based on filename
-            self.audio_path = os.path.join(os.path.dirname(os.path.dirname(fname)), 'wav', dat_name)
+            self.audio_path = os.path.join(os.path.dirname(os.path.dirname(fname)), dat_name, 'wav')
 
         with open(fname,'rt') as csv_f:
             # create dict reader
@@ -447,6 +446,8 @@ class measure(mcvqoe.base.Measure):
 
         # set total number of trials, this gives better progress updates
         self.trials = len(data)
+
+        print(f"\n\n\nself.audio_path: {self.audio_path}\n\n\n")
 
         return data
     
