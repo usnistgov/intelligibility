@@ -4,10 +4,11 @@ import mcvqoe.base
 import os.path
 import pkg_resources
 import re
+import scipy.signal
+import statistics
 
 import mcvqoe.intelligibility.intelligibility_eval as evaluation
 import numpy as np
-import scipy.signal
 
 from mcvqoe.base.terminal_user import terminal_progress_update, terminal_user_check
 from mcvqoe.delay.ITS_delay import active_speech_level
@@ -173,6 +174,14 @@ class measure(mcvqoe.base.Measure):
         self.data_filename = []
         self.data_dirs = []
         self.iterations = 1
+        
+        # Used for average Intelligibility display in GUI
+        # self.latest_intell = 0
+        # self.ten_intell_avg = np.nan
+        # self.overall_intell_avg = np.nan
+        self.intell_list = []
+        # 1st position: overall intell avg, 2nd: last 10 avg, 3rd: last score
+        self.gui_extras = [np.nan, np.nan, float(0)]
 
         for k, v in kwargs.items():
             if hasattr(self, k):
@@ -327,7 +336,6 @@ class measure(mcvqoe.base.Measure):
         -------
         dict
             returns a dictionary with estimated values
-
         """
 
         #---------------------[Load in recorded audio]---------------------
@@ -355,6 +363,21 @@ class measure(mcvqoe.base.Measure):
 
         # only one element in list, convert to scalar
         success = success[0]
+
+        #---------------------[Intell averages for GUI]---------------------
+        
+        # Append to overall intelligibility list
+        self.intell_list.append(success)
+        
+        # Add latest intell for object retrieval in GUI
+        self.gui_extras[2] = success
+        
+        # Calculate average intell over the entire course of test
+        self.gui_extras[0] = statistics.mean(self.intell_list)
+        
+        # Calculate average intell over the last 10 intell scores
+        if len(self.intell_list) >= 10:
+            self.gui_extras[1] = statistics.mean(self.intell_list[-10:])  
 
         return {
                     'Intelligibility':success,
@@ -446,8 +469,6 @@ class measure(mcvqoe.base.Measure):
 
         # set total number of trials, this gives better progress updates
         self.trials = len(data)
-
-        print(f"\n\n\nself.audio_path: {self.audio_path}\n\n\n")
 
         return data
     
