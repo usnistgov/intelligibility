@@ -176,9 +176,6 @@ class measure(mcvqoe.base.Measure):
         self.iterations = 1
         
         # Used for average Intelligibility display in GUI
-        # self.latest_intell = 0
-        # self.ten_intell_avg = np.nan
-        # self.overall_intell_avg = np.nan
         self.intell_list = []
         # 1st position: overall intell avg, 2nd: last 10 avg, 3rd: last score
         self.gui_extras = [np.nan, np.nan, float(0)]
@@ -330,7 +327,7 @@ class measure(mcvqoe.base.Measure):
         fname : str
             audio file to process.
         rec_chans : tuple
-            tuple of recived channel names.
+            tuple of received channel names.
 
         Returns
         -------
@@ -349,7 +346,7 @@ class measure(mcvqoe.base.Measure):
             # get the index of the voice channel
             voice_idx = rec_chans.index('rx_voice')
             # get voice channel
-            voice_dat = rec_dat[:,voice_idx]
+            voice_dat = rec_dat[:, voice_idx]
         else:
             voice_dat = rec_dat
 
@@ -473,7 +470,7 @@ class measure(mcvqoe.base.Measure):
         return data
     
     def post_write(self, test_folder="", file=""):
-        """Overwrites measure class post_write() in order to print PSuD results in
+        """Overwrites measure class post_write() in order to print Intelligibility results in
         tests.log
         """
         
