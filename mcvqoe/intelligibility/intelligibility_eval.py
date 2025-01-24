@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct  7 12:47:39 2021
-
-@author: jkp4
-"""
 import argparse
 import json
 import mcvqoe.math
